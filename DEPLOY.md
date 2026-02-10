@@ -1,23 +1,28 @@
 # Deploy na Vercel
 
+O projeto usa **Supabase** como banco de dados e é publicado na **Vercel** a partir do **GitHub**. Cada push na branch conectada gera deploy automático.
+
 ## Opção 1: Via GitHub (Recomendado)
 
-1. Criar repositório no GitHub
-2. Push do código:
+1. Criar repositório no GitHub e fazer push do código:
 ```bash
 git init
 git add .
-git commit -m "Initial commit - Base Marketing MVP"
+git commit -m "Initial commit - Base Marketing"
 git remote add origin https://github.com/SEU-USUARIO/base-marketing.git
+git branch -M main
 git push -u origin main
 ```
 
-3. Ir em https://vercel.com
-4. "New Project" > Importar seu repositório
-5. Vercel detecta automaticamente Vite
-6. Deploy! 🚀
+2. Acessar https://vercel.com → **Add New** → **Project** → importar o repositório.
+3. Configurar **Environment Variables** no projeto:
+   - `SUPABASE_URL` — URL do projeto Supabase
+   - `SUPABASE_SERVICE_ROLE_KEY` — Service Role Key do Supabase
+   - `JWT_SECRET` — chave para JWT (mín. 64 caracteres)
+   - `VITE_API_URL` — deixar **vazio** (API e frontend na mesma origem)
+4. Deploy. A Vercel detecta Vite e o `vercel.json` (rewrites para `/api/*` e SPA).
 
-**URL será algo como:** `base-marketing.vercel.app`
+**URL será algo como:** `seu-projeto.vercel.app`
 
 ---
 
@@ -37,26 +42,11 @@ vercel --prod
 
 ---
 
-## Configuração Vercel (vercel.json)
+## Configuração (vercel.json)
 
-Já está configurado! Se precisar customizar, use:
+O `vercel.json` já define:
 
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite"
-}
-```
+- **Rewrites:** `/api/*` → serverless `api/[...path].js`; demais rotas → `index.html` (SPA).
+- Build e output são detectados automaticamente (Vite → `dist/`).
 
----
-
-## Depois do deploy
-
-Compartilhe a URL com sua esposa:
-- "Teste as funcionalidades"
-- "Navegue entre Dashboard e Check-in"
-- "Veja se a linguagem está natural"
-- "Mande feedback do que falta ou do que está sobrando"
-
-**Importante:** Mostre que é um protótipo com dados fake para testar a UX antes de construir o backend.
+Para mais detalhes de setup inicial (Supabase, .env, primeiro deploy), veja **INIT.md**.
