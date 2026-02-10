@@ -93,6 +93,24 @@ function Dashboard() {
     loadData();
   }, []);
 
+  // Atualização automática (polling) para o coordenador ver novos check-ins sem F5
+  const POLLING_INTERVAL_MS = 30 * 1000; // 30 segundos
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      try {
+        const overviewData = await dashboardApi.overview();
+        setOverview(overviewData);
+        if (selectedPessoa?.id) {
+          const data = await checkinsApi.porPessoa(selectedPessoa.id);
+          setCheckinsPessoa(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        // ignora erros silenciosamente no polling
+      }
+    }, POLLING_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [selectedPessoa?.id]);
+
   async function loadData() {
     setLoading(true);
     setError(null);
