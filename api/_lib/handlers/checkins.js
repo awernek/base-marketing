@@ -28,14 +28,14 @@ export async function listar(req, res, params, user) {
   if (error) return serverError(res, error);
   return json(res, (data || []).map(c => ({
     id: c.id, pessoaId: c.pessoa_id, pessoaNome: c.pessoas?.nome || null,
-    data: c.data, carga: c.carga, observacoes: c.observacoes,
+    data: c.data, carga: c.carga, bloqueio: c.bloqueio,
   })));
 }
 
 // POST /api/checkins
 export async function criar(req, res, params, user) {
   if (user.tipo !== TipoUsuario.DESIGNER || !user.pessoaId) return forbidden(res);
-  const { carga, observacoes } = req.body || {};
+  const { carga, bloqueio } = req.body || {};
   if (carga === undefined || carga === null) return badRequest(res, 'Carga é obrigatória.');
 
   const hoje = new Date().toISOString().split('T')[0];
@@ -45,17 +45,17 @@ export async function criar(req, res, params, user) {
   let data, error;
   if (existing) {
     ({ data, error } = await supabase.from('checkins')
-      .update({ carga, observacoes: observacoes || null })
+      .update({ carga, bloqueio: bloqueio || null })
       .eq('id', existing.id).select('*, pessoas(nome)').single());
   } else {
     ({ data, error } = await supabase.from('checkins')
-      .insert({ pessoa_id: user.pessoaId, data: hoje, carga, observacoes: observacoes || null })
+      .insert({ pessoa_id: user.pessoaId, data: hoje, carga, bloqueio: bloqueio || null })
       .select('*, pessoas(nome)').single());
   }
   if (error) return serverError(res, error);
   return created(res, {
     id: data.id, pessoaId: data.pessoa_id, pessoaNome: data.pessoas?.nome || null,
-    data: data.data, carga: data.carga, observacoes: data.observacoes,
+    data: data.data, carga: data.carga, bloqueio: data.bloqueio,
   });
 }
 
@@ -70,7 +70,7 @@ export async function semanaAtual(req, res, params, user) {
   if (error) return serverError(res, error);
   return json(res, (data || []).map(c => ({
     id: c.id, pessoaId: c.pessoa_id, pessoaNome: c.pessoas?.nome || null,
-    data: c.data, carga: c.carga, observacoes: c.observacoes,
+    data: c.data, carga: c.carga, bloqueio: c.bloqueio,
   })));
 }
 
@@ -84,6 +84,6 @@ export async function porPessoa(req, res, params, user) {
   if (error) return serverError(res, error);
   return json(res, (data || []).map(c => ({
     id: c.id, pessoaId: c.pessoa_id, pessoaNome: c.pessoas?.nome || null,
-    data: c.data, carga: c.carga, observacoes: c.observacoes,
+    data: c.data, carga: c.carga, bloqueio: c.bloqueio,
   })));
 }
