@@ -65,6 +65,8 @@ CREATE TABLE demandas (
     -- 0 Venda, 1 Lead, 2 Institucional
   status              SMALLINT NOT NULL DEFAULT 0,
     -- 0 OK, 1 Atencao, 2 Risco
+  etapa               TEXT NOT NULL DEFAULT 'a_fazer' CHECK (etapa IN ('a_fazer', 'em_andamento', 'em_revisao', 'concluido')),
+    -- Kanban (Sprint 3)
   prioridade          SMALLINT NOT NULL DEFAULT 1,
     -- 0 Alta, 1 Media, 2 Baixa
   ordem               INT,
@@ -77,6 +79,8 @@ CREATE TABLE demandas (
 CREATE INDEX idx_demandas_responsavel ON demandas (responsavel_id);
 CREATE INDEX idx_demandas_prazo       ON demandas (prazo);
 CREATE INDEX idx_demandas_concluida   ON demandas (concluida);
+CREATE INDEX idx_demandas_prioridade  ON demandas (prioridade);
+CREATE INDEX idx_demandas_etapa       ON demandas (etapa);
 
 -- ─── Tabela: atualizacoes_demanda ───────────────────────
 CREATE TABLE atualizacoes_demanda (
@@ -88,6 +92,18 @@ CREATE TABLE atualizacoes_demanda (
   criado_em   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_atualizacoes_demanda ON atualizacoes_demanda (demanda_id);
+
+-- ─── Tabela: comentarios (Sprint 2) ──────────────────────
+CREATE TABLE comentarios (
+  id          SERIAL PRIMARY KEY,
+  demanda_id  INT NOT NULL REFERENCES demandas (id) ON DELETE CASCADE,
+  usuario_id  UUID NOT NULL REFERENCES usuarios (id),
+  texto       TEXT NOT NULL,
+  anexo_url   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_comentarios_demanda ON comentarios (demanda_id);
+CREATE INDEX idx_comentarios_created ON comentarios (created_at DESC);
 
 -- ─── Tabela: checkins ───────────────────────────────────
 CREATE TABLE checkins (

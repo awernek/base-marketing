@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { demandasApi, pessoasApi, empreendimentosApi } from '../services/api';
+import Comentarios from './Comentarios';
+import KanbanBoard from './KanbanBoard';
+import Filtros from './Filtros';
 import {
   getStatusEmoji,
   getPrioridadeEmoji,
+  getPrioridadeBadgeClass,
+  getStatusAutomaticoBadge,
   statusLabels,
   tipoLabels,
   impactoLabels,
@@ -27,6 +32,11 @@ function Demandas() {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState(filtroInicial);
   const [filtroEmpreendimentoId, setFiltroEmpreendimentoId] = useState(empreendimentoFiltro);
+  const [filtroPrioridade, setFiltroPrioridade] = useState('');
+  const [filtroResponsavelId, setFiltroResponsavelId] = useState('');
+  const [filtroDe, setFiltroDe] = useState('');
+  const [filtroAte, setFiltroAte] = useState('');
+  const [vistaKanban, setVistaKanban] = useState(false);
   const [showNovaDemanda, setShowNovaDemanda] = useState(false);
   const [demandaEmEdicao, setDemandaEmEdicao] = useState(null);
   const [novaDemanda, setNovaDemanda] = useState({
@@ -55,10 +65,6 @@ function Demandas() {
   const [salvandoDemanda, setSalvandoDemanda] = useState(false);
   const [atualizandoStatus, setAtualizandoStatus] = useState(null);
   const [demandaComentarios, setDemandaComentarios] = useState(null);
-  const [atualizacoesLista, setAtualizacoesLista] = useState([]);
-  const [novoComentario, setNovoComentario] = useState('');
-  const [enviandoComentario, setEnviandoComentario] = useState(false);
-  const [loadingAtualizacoes, setLoadingAtualizacoes] = useState(false);
 
   useEffect(() => {
     setFiltro(filtroInicial);
@@ -67,7 +73,7 @@ function Demandas() {
 
   useEffect(() => {
     loadData();
-  }, [filtro, filtroEmpreendimentoId, isCoordenador, isDesigner]);
+  }, [filtro, filtroEmpreendimentoId, filtroPrioridade, filtroResponsavelId, filtroDe, filtroAte, isCoordenador, isDesigner]);
 
   async function loadData() {
     setLoading(true);
@@ -77,11 +83,21 @@ function Demandas() {
         if (filtro === 'risco') {
           data = await demandasApi.listarEmRisco().catch(() => []);
         } else if (filtro === 'concluidas') {
-          const todas = await demandasApi.listar().catch(() => []);
+          const params = {};
+          if (filtroEmpreendimentoId) params.empreendimentoId = Number(filtroEmpreendimentoId);
+          if (filtroPrioridade !== '') params.prioridade = Number(filtroPrioridade);
+          if (filtroResponsavelId) params.responsavelId = Number(filtroResponsavelId);
+          if (filtroDe) params.de = filtroDe;
+          if (filtroAte) params.ate = filtroAte;
+          const todas = await demandasApi.listar(params).catch(() => []);
           data = (todas || []).filter(d => d.concluida);
         } else {
           const params = { ativas: true };
           if (filtroEmpreendimentoId) params.empreendimentoId = Number(filtroEmpreendimentoId);
+          if (filtroPrioridade !== '') params.prioridade = Number(filtroPrioridade);
+          if (filtroResponsavelId) params.responsavelId = Number(filtroResponsavelId);
+          if (filtroDe) params.de = filtroDe;
+          if (filtroAte) params.ate = filtroAte;
           data = await demandasApi.listar(params);
         }
       } else {
@@ -109,12 +125,12 @@ function Demandas() {
     }
   }
 
+  // Ordenação: prioridade (Alta primeiro), depois prazo
   const demandasOrdenadas = [...demandas].sort((a, b) => {
     const prioridadeOrder = { [PrioridadeDemanda.ALTA]: 0, [PrioridadeDemanda.MEDIA]: 1, [PrioridadeDemanda.BAIXA]: 2 };
-    const statusOrder = { [StatusDemanda.RISCO]: 0, [StatusDemanda.ATENCAO]: 1, [StatusDemanda.OK]: 2 };
     const pa = prioridadeOrder[a.prioridade] ?? 3, pb = prioridadeOrder[b.prioridade] ?? 3;
     if (pa !== pb) return pa - pb;
-    return (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3);
+    return new Date(a.prazo) - new Date(b.prazo);
   });
 
   async function handleAlterarStatus(demandaId, status) {
@@ -201,31 +217,6 @@ function Demandas() {
 
   function handleAbrirComentarios(demanda) {
     setDemandaComentarios(demanda);
-    setAtualizacoesLista([]);
-    setNovoComentario('');
-    if (demanda?.id) {
-      setLoadingAtualizacoes(true);
-      demandasApi.atualizacoes(demanda.id)
-        .then(data => setAtualizacoesLista(Array.isArray(data) ? data : []))
-        .catch(() => setAtualizacoesLista([]))
-        .finally(() => setLoadingAtualizacoes(false));
-    }
-  }
-
-  async function handleEnviarComentario(e) {
-    e.preventDefault();
-    if (!demandaComentarios?.id || !novoComentario.trim()) return;
-    setEnviandoComentario(true);
-    try {
-      await demandasApi.criarAtualizacao(demandaComentarios.id, novoComentario.trim());
-      setNovoComentario('');
-      const data = await demandasApi.atualizacoes(demandaComentarios.id);
-      setAtualizacoesLista(Array.isArray(data) ? data : []);
-    } catch (err) {
-      alert(err?.message || 'Erro ao enviar comentário.');
-    } finally {
-      setEnviandoComentario(false);
-    }
   }
 
   async function handleConcluirDemanda(demanda) {
@@ -268,17 +259,51 @@ function Demandas() {
                 {f === 'ativas' ? 'Ativas' : f === 'risco' ? 'Em risco' : 'Concluídas'}
               </Link>
             ))}
+            {(filtro === 'ativas' || filtro === 'concluidas') && (
+              <Filtros
+                empreendimentos={empreendimentosLista}
+                pessoas={pessoasLista}
+                showResponsavel={isCoordenador}
+                values={{
+                  empreendimentoId: filtroEmpreendimentoId,
+                  responsavelId: filtroResponsavelId,
+                  prioridade: filtroPrioridade,
+                  de: filtroDe,
+                  ate: filtroAte,
+                }}
+                onChange={(campo, valor) => {
+                  if (campo === 'empreendimentoId') setFiltroEmpreendimentoId(valor);
+                  if (campo === 'responsavelId') setFiltroResponsavelId(valor);
+                  if (campo === 'prioridade') setFiltroPrioridade(valor);
+                  if (campo === 'de') setFiltroDe(valor);
+                  if (campo === 'ate') setFiltroAte(valor);
+                }}
+                onLimpar={() => {
+                  setFiltroEmpreendimentoId('');
+                  setFiltroPrioridade('');
+                  setFiltroResponsavelId('');
+                  setFiltroDe('');
+                  setFiltroAte('');
+                }}
+              />
+            )}
             {filtro === 'ativas' && (
-              <select
-                value={filtroEmpreendimentoId}
-                onChange={e => setFiltroEmpreendimentoId(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Todos os empreendimentos</option>
-                {empreendimentosLista.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.nome}</option>
-                ))}
-              </select>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setVistaKanban(false)}
+                  className={`px-3 py-2 text-sm font-medium ${!vistaKanban ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVistaKanban(true)}
+                  className={`px-3 py-2 text-sm font-medium ${vistaKanban ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Kanban
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -294,7 +319,14 @@ function Demandas() {
           </div>
         )}
 
-        <div className="space-y-3">
+        {filtro === 'ativas' && vistaKanban ? (
+          <KanbanBoard
+            demandas={demandas}
+            setDemandas={setDemandas}
+            onAbrirComentarios={handleAbrirComentarios}
+          />
+        ) : (
+          <div className="space-y-3">
           {demandasOrdenadas.length === 0 ? (
             <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
               Nenhuma demanda nesta lista.
@@ -331,17 +363,24 @@ function Demandas() {
                       )}
                     </div>
                     <div className="mt-2 flex gap-2 flex-wrap">
-                      <span className="px-2 py-1 rounded-md bg-gray-100 text-xs">{getPrioridadeEmoji(demanda.prioridade)} {prioridadeLabels[demanda.prioridade] ?? ''}</span>
+                      {getStatusAutomaticoBadge(demanda.statusAutomatico) && (
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${getStatusAutomaticoBadge(demanda.statusAutomatico).className}`}>
+                          {getStatusAutomaticoBadge(demanda.statusAutomatico).label}
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${getPrioridadeBadgeClass(demanda.prioridade)}`}>{getPrioridadeEmoji(demanda.prioridade)} {prioridadeLabels[demanda.prioridade] ?? ''}</span>
                       <span className="px-2 py-1 rounded-md bg-gray-100 text-xs">{tipoLabels[demanda.tipo] || ''}</span>
                       <span className="px-2 py-1 rounded-md bg-blue-100 text-xs text-blue-700">{impactoLabels[demanda.impacto] || ''}</span>
                       {isCoordenador && filtro !== 'concluidas' && (
                         <>
                           <button type="button" onClick={() => handleAbrirEditarDemanda(demanda)} className="text-xs text-blue-600 hover:text-blue-800 border border-blue-300 rounded px-2 py-1">Editar</button>
                           <button type="button" onClick={() => handleConcluirDemanda(demanda)} className="text-xs text-green-600 hover:text-green-800 border border-green-300 rounded px-2 py-1">✓ Concluir</button>
-                          {podeAlterarStatus(demanda) && (
-                            <button type="button" onClick={() => handleAbrirComentarios(demanda)} className="text-xs text-gray-600 hover:text-gray-800 border border-gray-300 rounded px-2 py-1">💬 Comentários</button>
-                          )}
                         </>
+                      )}
+                      {podeAlterarStatus(demanda) && (
+                        <button type="button" onClick={() => handleAbrirComentarios(demanda)} className="text-xs text-gray-600 hover:text-gray-800 border border-gray-300 rounded px-2 py-1">
+                          💬 Comentários {demanda.comentariosCount > 0 && <span className="ml-1 font-medium">({demanda.comentariosCount})</span>}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -349,10 +388,11 @@ function Demandas() {
               </div>
             ))
           )}
-        </div>
+          </div>
+        )}
       </main>
 
-      {/* Modal Comentários / Atualizações */}
+      {/* Modal Comentários (Sprint 2) */}
       {demandaComentarios && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setDemandaComentarios(null)}>
           <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -361,34 +401,11 @@ function Demandas() {
               <button type="button" onClick={() => setDemandaComentarios(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
-              {loadingAtualizacoes ? (
-                <p className="text-sm text-gray-500">Carregando...</p>
-              ) : atualizacoesLista.length === 0 ? (
-                <p className="text-sm text-gray-500">Nenhum comentário ainda.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {atualizacoesLista.map(at => (
-                    <li key={at.id} className="text-sm border-l-2 border-gray-200 pl-3 py-1">
-                      <span className="text-gray-600">{at.pessoaNome || 'Coordenador'}</span>
-                      <span className="text-gray-400 ml-2">{new Date(at.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                      <p className="text-gray-900 mt-1">{at.texto}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <form onSubmit={handleEnviarComentario} className="p-4 border-t flex gap-2">
-              <input
-                type="text"
-                value={novoComentario}
-                onChange={e => setNovoComentario(e.target.value)}
-                placeholder="Nova atualização..."
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              <Comentarios
+                demandaId={demandaComentarios.id}
+                onComentarioAdicionado={loadData}
               />
-              <button type="submit" disabled={enviandoComentario || !novoComentario.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                {enviandoComentario ? '...' : 'Enviar'}
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       )}

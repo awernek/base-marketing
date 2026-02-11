@@ -4,6 +4,7 @@ import * as auth from './handlers/auth.js';
 import * as pessoas from './handlers/pessoas.js';
 import * as empreendimentos from './handlers/empreendimentos.js';
 import * as demandas from './handlers/demandas.js';
+import * as comentarios from './handlers/comentarios.js';
 import * as checkins from './handlers/checkins.js';
 import * as dashboard from './handlers/dashboard.js';
 import * as relatorios from './handlers/relatorios.js';
@@ -67,9 +68,15 @@ const routes = [
   ['api/demandas/:id',         'GET',  demandas.obter,           true],
   ['api/demandas/:id',         'PUT',  demandas.atualizar,       true],
   ['api/demandas/:id/status',  'PUT',  demandas.atualizarStatus, true],
+  ['api/demandas/:id/etapa',  'PUT',  demandas.atualizarEtapa,  true],
   ['api/demandas/:id/concluir','PUT',  demandas.concluir,        true],
   ['api/demandas/:id/atualizacoes','GET',demandas.listarAtualizacoes,true],
   ['api/demandas/:id/atualizacoes','POST',demandas.criarAtualizacao,true],
+
+  // ── Comentários (Sprint 2) ──────────────
+  ['api/comentarios',              'GET',    comentarios.listar,   true],
+  ['api/comentarios',              'POST',   comentarios.criar,    true],
+  ['api/comentarios/:id',          'DELETE', comentarios.remover,  true],
 
   // ── Check-ins ──────────────────────────
   ['api/checkins',             'GET',  checkins.listar,      true],
@@ -101,7 +108,7 @@ function parseQuery(url) {
 
 export async function route(req, res) {
   // CORS preflight
-  if (req.method === 'OPTIONS') return cors(res);
+  if (req.method === 'OPTIONS') return cors(req, res);
 
   // Standard CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');

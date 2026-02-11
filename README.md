@@ -31,9 +31,26 @@ npm install
 #    Copie .env.example para .env e preencha (ver seção Variáveis de ambiente)
 
 # 3. Desenvolvimento local
-npm run dev
-# Ou, para rodar frontend + API juntos (recomendado):
+
+**Para o login e a API funcionarem**, você precisa rodar a API junto com o frontend. Duas opções:
+
+**Opção A — Recomendada (tudo em um comando):**
+```bash
 npx vercel dev
+```
+Frontend e API rodam juntos; acesse a URL que o Vercel mostrar (ex.: http://localhost:3000).
+
+**Opção B — Dois terminais (sem Vercel CLI):**
+```bash
+# Terminal 1: subir a API
+npm run dev:api
+
+# Terminal 2: subir o frontend
+npm run dev
+```
+No `.env`, defina `VITE_API_URL=http://localhost:3000` para o frontend chamar a API local.
+
+Se rodar **apenas** `npm run dev`, as chamadas a `/api/*` retornarão 404 (a API não estará rodando).
 
 # 4. Build para produção
 npm run build

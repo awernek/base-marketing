@@ -137,3 +137,23 @@ export function getPrioridadeEmoji(prioridade) {
     default: return '⚪';
   }
 }
+
+/** Classes Tailwind para badge de prioridade (Alta=vermelho, Média=amarelo, Baixa=verde) */
+export function getPrioridadeBadgeClass(prioridade) {
+  switch (prioridade) {
+    case PrioridadeDemanda.ALTA: return 'bg-red-100 text-red-800 border border-red-300';
+    case PrioridadeDemanda.MEDIA: return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+    case PrioridadeDemanda.BAIXA: return 'bg-green-100 text-green-800 border border-green-300';
+    default: return 'bg-gray-100 text-gray-800 border border-gray-300';
+  }
+}
+
+/** Badge de status automático por prazo (Sprint 4): atrasado, urgente, atencao, normal */
+export function getStatusAutomaticoBadge(statusAutomatico) {
+  switch (statusAutomatico) {
+    case 'atrasado': return { label: '⚠️ Atrasado', className: 'bg-red-600 text-white' };
+    case 'urgente': return { label: '🔥 Urgente', className: 'bg-orange-600 text-white' };
+    case 'atencao': return { label: '⏱ Atenção', className: 'bg-amber-500 text-white' };
+    default: return null;
+  }
+}

@@ -209,6 +209,10 @@ export const demandasApi = {
     if (params.ate) sp.set('ate', params.ate);
     if (params.empreendimentoId != null) sp.set('empreendimentoId', params.empreendimentoId);
     if (params.tipo != null) sp.set('tipo', params.tipo);
+    if (params.prioridade != null && params.prioridade !== '') sp.set('prioridade', params.prioridade);
+    if (params.responsavelId != null && params.responsavelId !== '') sp.set('responsavelId', params.responsavelId);
+    if (params.de) sp.set('de', params.de);
+    if (params.ate) sp.set('ate', params.ate);
     const q = sp.toString();
     return request(`/api/demandas${q ? `?${q}` : ''}`);
   },
@@ -250,6 +254,13 @@ export const demandasApi = {
     });
   },
 
+  atualizarEtapa(id, etapa) {
+    return request(`/api/demandas/${id}/etapa`, {
+      method: 'PUT',
+      body: JSON.stringify({ etapa }),
+    });
+  },
+
   concluir(id) {
     return request(`/api/demandas/${id}/concluir`, {
       method: 'PUT',
@@ -266,6 +277,22 @@ export const demandasApi = {
       method: 'POST',
       body: JSON.stringify({ texto }),
     });
+  },
+
+  // Comentários (Sprint 2 — nova API)
+  comentarios(demandaId) {
+    return request(`/api/comentarios?demanda_id=${demandaId}`);
+  },
+
+  criarComentario(data) {
+    return request('/api/comentarios', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  excluirComentario(id) {
+    return request(`/api/comentarios/${id}`, { method: 'DELETE' });
   },
 };
 

@@ -7,32 +7,67 @@ import {
 
 const SELECT_DEMANDA = '*, pessoas!demandas_responsavel_id_fkey(nome), empreendimentos(nome)';
 
-function fmt(d) {
+const ETAPAS = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+
+/** Status automático por prazo (Sprint 4): atrasado, urgente, atencao, normal */
+function statusAutomatico(prazo, concluida) {
+  if (concluida || !prazo) return 'normal';
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const p = new Date(prazo);
+  p.setHours(0, 0, 0, 0);
+  const diasRestantes = Math.ceil((p - hoje) / (1000 * 60 * 60 * 24));
+  if (diasRestantes < 0) return 'atrasado';
+  if (diasRestantes <= 2) return 'urgente';
+  if (diasRestantes <= 7) return 'atencao';
+  return 'normal';
+}
+
+function fmt(d, comentariosCount = 0) {
+  const etapa = d.etapa && ETAPAS.includes(d.etapa) ? d.etapa : (d.concluida ? 'concluido' : 'a_fazer');
   return {
     id: d.id, titulo: d.titulo, descricao: d.descricao, tipo: d.tipo,
     responsavelId: d.responsavel_id, responsavelNome: d.pessoas?.nome || null,
     prazo: d.prazo, impacto: d.impacto, status: d.status, prioridade: d.prioridade,
+    etapa,
     ordem: d.ordem, link: d.link, empreendimentoId: d.empreendimento_id,
     empreendimentoNome: d.empreendimentos?.nome || null, concluida: d.concluida,
     criadaEm: d.criada_em, atualizadaEm: d.atualizada_em,
+    comentariosCount,
+    statusAutomatico: statusAutomatico(d.prazo, d.concluida),
   };
 }
 
-// GET /api/demandas
+// GET /api/demandas — ordenação: prioridade (Alta primeiro), depois prazo
 export async function listar(req, res, params, user) {
-  let query = supabase.from('demandas').select(SELECT_DEMANDA).order('prazo', { ascending: true });
+  let query = supabase
+    .from('demandas')
+    .select(SELECT_DEMANDA)
+    .order('prioridade', { ascending: true })
+    .order('prazo', { ascending: true });
   if (user.tipo === TipoUsuario.DESIGNER) query = query.eq('responsavel_id', user.pessoaId);
 
-  const { ativas, de, ate, empreendimentoId, tipo } = req.query;
+  const { ativas, de, ate, empreendimentoId, tipo, prioridade, responsavelId } = req.query;
   if (ativas === 'true') query = query.eq('concluida', false);
   if (de) query = query.gte('prazo', de);
   if (ate) query = query.lte('prazo', ate);
   if (empreendimentoId) query = query.eq('empreendimento_id', parseInt(empreendimentoId, 10));
   if (tipo !== undefined && tipo !== '') query = query.eq('tipo', parseInt(tipo, 10));
+  if (prioridade !== undefined && prioridade !== '') query = query.eq('prioridade', parseInt(prioridade, 10));
+  if (responsavelId !== undefined && responsavelId !== '') query = query.eq('responsavel_id', parseInt(responsavelId, 10));
 
   const { data, error } = await query;
   if (error) return serverError(res, error);
-  return json(res, (data || []).map(fmt));
+  const list = data || [];
+  const ids = list.map(d => d.id);
+  let countByDemanda = {};
+  if (ids.length > 0) {
+    const { data: comentariosRows, error: errComentarios } = await supabase.from('comentarios').select('demanda_id').in('demanda_id', ids);
+    if (!errComentarios && comentariosRows) {
+      comentariosRows.forEach(r => { countByDemanda[r.demanda_id] = (countByDemanda[r.demanda_id] || 0) + 1; });
+    }
+  }
+  return json(res, list.map(d => fmt(d, countByDemanda[d.id] || 0)));
 }
 
 // POST /api/demandas
@@ -123,6 +158,21 @@ export async function atualizarStatus(req, res, params, user) {
   if (!d) return notFound(res, 'Demanda não encontrada.');
   if (user.tipo === TipoUsuario.DESIGNER && d.responsavel_id !== user.pessoaId) return forbidden(res);
   const { error } = await supabase.from('demandas').update({ status }).eq('id', id);
+  if (error) return serverError(res, error);
+  return noContent(res);
+}
+
+// PUT /api/demandas/:id/etapa (Sprint 3 — Kanban)
+export async function atualizarEtapa(req, res, params, user) {
+  const id = parseInt(params.id, 10);
+  if (isNaN(id)) return badRequest(res, 'ID inválido.');
+  const { etapa } = req.body || {};
+  if (!etapa || !ETAPAS.includes(etapa)) return badRequest(res, 'etapa inválida. Use: a_fazer, em_andamento, em_revisao, concluido.');
+  const { data: d } = await supabase.from('demandas').select('responsavel_id').eq('id', id).single();
+  if (!d) return notFound(res, 'Demanda não encontrada.');
+  if (user.tipo === TipoUsuario.DESIGNER && d.responsavel_id !== user.pessoaId) return forbidden(res);
+  const concluida = etapa === 'concluido';
+  const { error } = await supabase.from('demandas').update({ etapa, concluida }).eq('id', id);
   if (error) return serverError(res, error);
   return noContent(res);
 }
