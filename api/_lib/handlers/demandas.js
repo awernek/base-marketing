@@ -1,42 +1,12 @@
 import { supabase } from '../supabase.js';
 import { TipoUsuario } from '../auth.js';
+import { fmt, ETAPAS } from '../domain/demandas.js';
 import {
   json, created, noContent, badRequest, forbidden,
   notFound, serverError,
 } from '../response.js';
 
 const SELECT_DEMANDA = '*, pessoas!demandas_responsavel_id_fkey(nome), empreendimentos(nome)';
-
-const ETAPAS = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
-
-/** Status automático por prazo (Sprint 4): atrasado, urgente, atencao, normal */
-function statusAutomatico(prazo, concluida) {
-  if (concluida || !prazo) return 'normal';
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const p = new Date(prazo);
-  p.setHours(0, 0, 0, 0);
-  const diasRestantes = Math.ceil((p - hoje) / (1000 * 60 * 60 * 24));
-  if (diasRestantes < 0) return 'atrasado';
-  if (diasRestantes <= 2) return 'urgente';
-  if (diasRestantes <= 7) return 'atencao';
-  return 'normal';
-}
-
-function fmt(d, comentariosCount = 0) {
-  const etapa = d.etapa && ETAPAS.includes(d.etapa) ? d.etapa : (d.concluida ? 'concluido' : 'a_fazer');
-  return {
-    id: d.id, titulo: d.titulo, descricao: d.descricao, tipo: d.tipo,
-    responsavelId: d.responsavel_id, responsavelNome: d.pessoas?.nome || null,
-    prazo: d.prazo, impacto: d.impacto, status: d.status, prioridade: d.prioridade,
-    etapa,
-    ordem: d.ordem, link: d.link, empreendimentoId: d.empreendimento_id,
-    empreendimentoNome: d.empreendimentos?.nome || null, concluida: d.concluida,
-    criadaEm: d.criada_em, atualizadaEm: d.atualizada_em,
-    comentariosCount,
-    statusAutomatico: statusAutomatico(d.prazo, d.concluida),
-  };
-}
 
 // GET /api/demandas — ordenação: prioridade (Alta primeiro), depois prazo
 export async function listar(req, res, params, user) {

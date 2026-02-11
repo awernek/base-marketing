@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { checkinsApi, demandasApi, pessoasApi } from '../services/api';
+import { useCheckinSemanaAtual } from '../hooks/useCheckinSemanaAtual';
 import { CargaSemanal, cargaLabels, getCargaEmojiFromString, getStatusEmoji, statusLabels, tipoLabels } from '../utils/enums';
 
 function CheckIn() {
@@ -12,47 +13,26 @@ function CheckIn() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
-  // Demandas do designer
   const [minhasDemandas, setMinhasDemandas] = useState([]);
   const [loadingDemandas, setLoadingDemandas] = useState(false);
 
-  // Check-in da semana atual (designer)
-  const [checkinSemanaAtual, setCheckinSemanaAtual] = useState(null);
-  const [loadingCheckinSemana, setLoadingCheckinSemana] = useState(false);
+  const { checkin: checkinSemanaAtual, loading: loadingCheckinSemana, refetch: refetchCheckinSemana } = useCheckinSemanaAtual(user, isDesigner);
 
-  // Lista de pessoas (para coordenador)
   const [pessoas, setPessoas] = useState([]);
   const [pessoaSelecionada, setPessoaSelecionada] = useState('');
   const [loadingPessoas, setLoadingPessoas] = useState(false);
 
   useEffect(() => {
-    if (isDesigner) {
-      loadMinhasDemandas();
-      loadCheckinSemanaAtual();
+    if (checkinSemanaAtual) {
+      setCarga(typeof checkinSemanaAtual.carga === 'number' ? checkinSemanaAtual.carga : CargaSemanal.MEDIA);
+      setBloqueio(checkinSemanaAtual.bloqueio || '');
     }
-    if (isCoordenador) {
-      loadPessoas();
-    }
-  }, [isDesigner, isCoordenador]);
+  }, [checkinSemanaAtual]);
 
-  async function loadCheckinSemanaAtual() {
-    if (!user?.pessoaId) return;
-    setLoadingCheckinSemana(true);
-    try {
-      const data = await checkinsApi.semanaAtual();
-      const lista = Array.isArray(data) ? data : (data?.checkins ? data.checkins : []);
-      const meuCheckin = lista.find(c => c.pessoaId === user.pessoaId) || (lista.length === 1 ? lista[0] : null);
-      setCheckinSemanaAtual(meuCheckin || null);
-      if (meuCheckin) {
-        setCarga(typeof meuCheckin.carga === 'number' ? meuCheckin.carga : CargaSemanal.MEDIA);
-        setBloqueio(meuCheckin.bloqueio || '');
-      }
-    } catch {
-      setCheckinSemanaAtual(null);
-    } finally {
-      setLoadingCheckinSemana(false);
-    }
-  }
+  useEffect(() => {
+    if (isDesigner) loadMinhasDemandas();
+    if (isCoordenador) loadPessoas();
+  }, [isDesigner, isCoordenador]);
 
   async function loadMinhasDemandas() {
     setLoadingDemandas(true);
@@ -105,9 +85,7 @@ function CheckIn() {
       if (isCoordenador) {
         setPessoaSelecionada('');
       }
-      if (isDesigner && user?.pessoaId) {
-        loadCheckinSemanaAtual();
-      }
+      if (isDesigner) refetchCheckinSemana();
     } catch (err) {
       setError(err?.message || 'Erro ao enviar check-in. Tente novamente.');
       console.error(err);

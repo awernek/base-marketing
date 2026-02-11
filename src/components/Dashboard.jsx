@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { pessoasApi, demandasApi, dashboardApi, checkinsApi, empreendimentosApi, authApi } from '../services/api';
+import Modal from './shared/Modal';
+import DemandaForm from './shared/DemandaForm';
+import DemandasRisco from './dashboard/DemandasRisco';
+import ProximosPrazos from './dashboard/ProximosPrazos';
+import { getInitialDemandaForm, demandaToForm, formToDemandaPayload } from '../utils/formDemanda';
 import {
   getCargaEmojiFromString,
   getStatusEmoji,
@@ -52,32 +57,9 @@ function Dashboard() {
   const [salvandoSenha, setSalvandoSenha] = useState(false);
   const [mensagemSenha, setMensagemSenha] = useState(null);
 
-  // Form nova demanda
-  const [novaDemanda, setNovaDemanda] = useState({
-    titulo: '',
-    descricao: '',
-    tipo: TipoDemanda.POST,
-    responsavelId: '',
-    prazo: '',
-    impacto: ImpactoNegocio.LEAD,
-    prioridade: PrioridadeDemanda.MEDIA,
-    empreendimentoId: '',
-    link: '',
-  });
+  const [novaDemanda, setNovaDemanda] = useState(() => getInitialDemandaForm());
   const [criandoDemanda, setCriandoDemanda] = useState(false);
-
-  // Form editar demanda (preenchido ao abrir modal)
-  const [editDemandaForm, setEditDemandaForm] = useState({
-    titulo: '',
-    descricao: '',
-    tipo: TipoDemanda.POST,
-    responsavelId: '',
-    prazo: '',
-    impacto: ImpactoNegocio.LEAD,
-    prioridade: PrioridadeDemanda.MEDIA,
-    empreendimentoId: '',
-    link: '',
-  });
+  const [editDemandaForm, setEditDemandaForm] = useState(() => getInitialDemandaForm());
   const [salvandoDemanda, setSalvandoDemanda] = useState(false);
   const [atualizandoStatus, setAtualizandoStatus] = useState(null);
 
@@ -272,23 +254,12 @@ function Dashboard() {
   }
 
   async function handleCriarDemanda(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     setCriandoDemanda(true);
     try {
-      const body = {
-        titulo: novaDemanda.titulo,
-        descricao: novaDemanda.descricao || null,
-        tipo: Number(novaDemanda.tipo),
-        responsavelId: Number(novaDemanda.responsavelId),
-        prazo: new Date(novaDemanda.prazo).toISOString(),
-        impacto: Number(novaDemanda.impacto),
-        prioridade: Number(novaDemanda.prioridade),
-        empreendimentoId: novaDemanda.empreendimentoId ? Number(novaDemanda.empreendimentoId) : null,
-        link: novaDemanda.link?.trim() || null,
-      };
-      await demandasApi.criar(body);
+      await demandasApi.criar(formToDemandaPayload(novaDemanda));
       setShowNovaDemanda(false);
-      setNovaDemanda({ titulo: '', descricao: '', tipo: TipoDemanda.POST, responsavelId: '', prazo: '', impacto: ImpactoNegocio.LEAD, prioridade: PrioridadeDemanda.MEDIA, empreendimentoId: '', link: '' });
+      setNovaDemanda(getInitialDemandaForm());
       await loadData();
     } catch (err) {
       console.error('Erro ao criar demanda:', err);
@@ -313,36 +284,15 @@ function Dashboard() {
 
   function handleAbrirEditarDemanda(demanda) {
     setDemandaEmEdicao(demanda);
-    setEditDemandaForm({
-      titulo: demanda.titulo,
-      descricao: demanda.descricao ?? '',
-      tipo: demanda.tipo,
-      responsavelId: String(demanda.responsavelId || ''),
-      prazo: demanda.prazo ? new Date(demanda.prazo).toISOString().slice(0, 10) : '',
-      impacto: demanda.impacto ?? ImpactoNegocio.LEAD,
-      prioridade: demanda.prioridade ?? PrioridadeDemanda.MEDIA,
-      empreendimentoId: demanda.empreendimentoId ? String(demanda.empreendimentoId) : '',
-      link: demanda.link ?? '',
-    });
+    setEditDemandaForm(demandaToForm(demanda));
   }
 
   async function handleSalvarEditarDemanda(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!demandaEmEdicao) return;
     setSalvandoDemanda(true);
     try {
-      const body = {
-        titulo: editDemandaForm.titulo,
-        descricao: editDemandaForm.descricao || null,
-        tipo: Number(editDemandaForm.tipo),
-        responsavelId: Number(editDemandaForm.responsavelId),
-        prazo: new Date(editDemandaForm.prazo).toISOString(),
-        impacto: Number(editDemandaForm.impacto),
-        prioridade: Number(editDemandaForm.prioridade),
-        empreendimentoId: editDemandaForm.empreendimentoId ? Number(editDemandaForm.empreendimentoId) : null,
-        link: editDemandaForm.link?.trim() || null,
-      };
-      await demandasApi.atualizar(demandaEmEdicao.id, body);
+      await demandasApi.atualizar(demandaEmEdicao.id, formToDemandaPayload(editDemandaForm));
       setDemandaEmEdicao(null);
       await loadData();
     } catch (err) {
@@ -479,30 +429,8 @@ function Dashboard() {
           )}
         </section>
 
-        {/* Próximos prazos (7 dias) */}
-        {proximosPrazos.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">📅 Próximos prazos (7 dias)</h2>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <ul className="space-y-2">
-                {proximosPrazos.slice(0, 10).map(d => (
-                  <li key={d.id} className="text-sm text-blue-900 flex items-center gap-2 flex-wrap">
-                    <span>{getStatusEmoji(d.status)}</span>
-                    <span className="font-medium">{d.titulo}</span>
-                    <span className="text-blue-700">prazo {new Date(d.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
-                    <span>{d.responsavelNome || '—'}</span>
-                    <Link to="/demandas" className="text-blue-600 hover:underline text-xs">Ver demandas</Link>
-                  </li>
-                ))}
-              </ul>
-              {proximosPrazos.length > 10 && (
-                <p className="text-xs text-blue-700 mt-2">+ {proximosPrazos.length - 10} mais</p>
-              )}
-            </div>
-          </section>
-        )}
+        <ProximosPrazos demandas={proximosPrazos} maxItems={10} />
 
-        {/* Alertas */}
         {(pessoasComCargaAlta.length > 0 || countDemandasEmRisco > 0) && (
           <section className="mb-8">
             <h2 className="text-lg font-medium text-gray-900 mb-4">⚠️ Alertas</h2>
@@ -512,12 +440,7 @@ function Dashboard() {
                   • <strong>{pessoa.nome}:</strong> {pessoa.demandasAtivas} demandas ativas + carga alta
                 </div>
               ))}
-              {countDemandasEmRisco > 0 && (
-                <div className="text-sm text-yellow-900">
-                  • {countDemandasEmRisco} {countDemandasEmRisco === 1 ? 'demanda' : 'demandas'} em risco
-                  <Link to="/demandas?filtro=risco" className="ml-2 text-yellow-700 underline hover:text-yellow-900">Ver em risco</Link>
-                </div>
-              )}
+              <DemandasRisco count={countDemandasEmRisco} />
             </div>
           </section>
         )}
@@ -872,307 +795,31 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Modal Nova Demanda */}
-      {showNovaDemanda && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowNovaDemanda(false)}>
-          <div className="bg-white rounded-lg max-w-xl w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Nova Demanda</h2>
-            
-            <form onSubmit={handleCriarDemanda} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">O que é?</label>
-                <input
-                  type="text"
-                  required
-                  value={novaDemanda.titulo}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, titulo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ex: Campanha de lançamento — Res. Horizonte"
-                />
-              </div>
+      <Modal open={showNovaDemanda} onClose={() => setShowNovaDemanda(false)} title="Nova Demanda">
+        <DemandaForm
+          value={novaDemanda}
+          onChange={setNovaDemanda}
+          onSubmit={handleCriarDemanda}
+          onCancel={() => setShowNovaDemanda(false)}
+          submitting={criandoDemanda}
+          submitLabel="Criar demanda"
+          pessoasLista={pessoasLista}
+          empreendimentosLista={empreendimentosLista}
+        />
+      </Modal>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Briefing / descrição (opcional)</label>
-                <textarea
-                  value={novaDemanda.descricao}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, descricao: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Contexto, referências, instruções..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prioridade</label>
-                <select
-                  value={novaDemanda.prioridade}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, prioridade: Number(e.target.value) }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={PrioridadeDemanda.ALTA}>Alta</option>
-                  <option value={PrioridadeDemanda.MEDIA}>Média</option>
-                  <option value={PrioridadeDemanda.BAIXA}>Baixa</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empreendimento (opcional)</label>
-                <select
-                  value={novaDemanda.empreendimentoId}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, empreendimentoId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Nenhum</option>
-                  {empreendimentosLista.map(emp => <option key={emp.id} value={emp.id}>{emp.nome}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                <select
-                  value={novaDemanda.tipo}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, tipo: Number(e.target.value) }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={TipoDemanda.POST}>Post</option>
-                  <option value={TipoDemanda.CAMPANHA}>Campanha</option>
-                  <option value={TipoDemanda.LANDING}>Landing</option>
-                  <option value={TipoDemanda.INSTITUCIONAL}>Institucional</option>
-                  <option value={TipoDemanda.OUTRO}>Outro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Responsável</label>
-                <select
-                  required
-                  value={novaDemanda.responsavelId}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, responsavelId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Selecione...</option>
-                  {pessoasLista.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.nome} — carga {p.cargaAtual || '—'}, {p.demandasAtivas ?? 0} demanda(s)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Link (opcional)</label>
-                <input
-                  type="url"
-                  value={novaDemanda.link}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, link: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prazo</label>
-                <input
-                  type="date"
-                  required
-                  value={novaDemanda.prazo}
-                  onChange={(e) => setNovaDemanda(prev => ({ ...prev, prazo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Impacto no negócio</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="impacto"
-                      value={ImpactoNegocio.VENDA}
-                      checked={novaDemanda.impacto === ImpactoNegocio.VENDA}
-                      onChange={(e) => setNovaDemanda(prev => ({ ...prev, impacto: Number(e.target.value) }))}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Venda direta</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="impacto"
-                      value={ImpactoNegocio.LEAD}
-                      checked={novaDemanda.impacto === ImpactoNegocio.LEAD}
-                      onChange={(e) => setNovaDemanda(prev => ({ ...prev, impacto: Number(e.target.value) }))}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Lead</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="impacto"
-                      value={ImpactoNegocio.INSTITUCIONAL}
-                      checked={novaDemanda.impacto === ImpactoNegocio.INSTITUCIONAL}
-                      onChange={(e) => setNovaDemanda(prev => ({ ...prev, impacto: Number(e.target.value) }))}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Institucional</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowNovaDemanda(false)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={criandoDemanda}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  {criandoDemanda ? 'Criando...' : 'Criar demanda'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Editar Demanda */}
-      {demandaEmEdicao && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setDemandaEmEdicao(null)}>
-          <div className="bg-white rounded-lg max-w-xl w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">Editar Demanda</h2>
-              <button onClick={() => setDemandaEmEdicao(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleSalvarEditarDemanda} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">O que é?</label>
-                <input
-                  type="text"
-                  required
-                  value={editDemandaForm.titulo}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, titulo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ex: Campanha de lançamento"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Briefing / descrição (opcional)</label>
-                <textarea
-                  value={editDemandaForm.descricao}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, descricao: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Contexto, referências..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prioridade</label>
-                <select
-                  value={editDemandaForm.prioridade}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, prioridade: Number(e.target.value) }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={PrioridadeDemanda.ALTA}>Alta</option>
-                  <option value={PrioridadeDemanda.MEDIA}>Média</option>
-                  <option value={PrioridadeDemanda.BAIXA}>Baixa</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empreendimento (opcional)</label>
-                <select
-                  value={editDemandaForm.empreendimentoId}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, empreendimentoId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Nenhum</option>
-                  {empreendimentosLista.map(emp => <option key={emp.id} value={emp.id}>{emp.nome}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                <select
-                  value={editDemandaForm.tipo}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, tipo: Number(e.target.value) }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={TipoDemanda.POST}>Post</option>
-                  <option value={TipoDemanda.CAMPANHA}>Campanha</option>
-                  <option value={TipoDemanda.LANDING}>Landing</option>
-                  <option value={TipoDemanda.INSTITUCIONAL}>Institucional</option>
-                  <option value={TipoDemanda.OUTRO}>Outro</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Responsável</label>
-                <select
-                  required
-                  value={editDemandaForm.responsavelId}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, responsavelId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Selecione...</option>
-                  {pessoasLista.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.nome} — carga {p.cargaAtual || '—'}, {p.demandasAtivas ?? 0} demanda(s)
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Link (opcional)</label>
-                <input
-                  type="url"
-                  value={editDemandaForm.link}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, link: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Prazo</label>
-                <input
-                  type="date"
-                  required
-                  value={editDemandaForm.prazo}
-                  onChange={(e) => setEditDemandaForm(prev => ({ ...prev, prazo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Impacto no negócio</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="radio" name="impactoEdit" value={ImpactoNegocio.VENDA} checked={editDemandaForm.impacto === ImpactoNegocio.VENDA} onChange={(e) => setEditDemandaForm(prev => ({ ...prev, impacto: Number(e.target.value) }))} className="mr-2" />
-                    <span className="text-sm text-gray-700">Venda direta</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="radio" name="impactoEdit" value={ImpactoNegocio.LEAD} checked={editDemandaForm.impacto === ImpactoNegocio.LEAD} onChange={(e) => setEditDemandaForm(prev => ({ ...prev, impacto: Number(e.target.value) }))} className="mr-2" />
-                    <span className="text-sm text-gray-700">Lead</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="radio" name="impactoEdit" value={ImpactoNegocio.INSTITUCIONAL} checked={editDemandaForm.impacto === ImpactoNegocio.INSTITUCIONAL} onChange={(e) => setEditDemandaForm(prev => ({ ...prev, impacto: Number(e.target.value) }))} className="mr-2" />
-                    <span className="text-sm text-gray-700">Institucional</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setDemandaEmEdicao(null)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors">Cancelar</button>
-                <button type="submit" disabled={salvandoDemanda} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                  {salvandoDemanda ? 'Salvando...' : 'Salvar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal open={!!demandaEmEdicao} onClose={() => setDemandaEmEdicao(null)} title="Editar Demanda">
+        <DemandaForm
+          value={editDemandaForm}
+          onChange={setEditDemandaForm}
+          onSubmit={handleSalvarEditarDemanda}
+          onCancel={() => setDemandaEmEdicao(null)}
+          submitting={salvandoDemanda}
+          submitLabel="Salvar"
+          pessoasLista={pessoasLista}
+          empreendimentosLista={empreendimentosLista}
+        />
+      </Modal>
 
     </div>
   );

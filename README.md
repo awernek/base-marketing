@@ -180,6 +180,10 @@ O `vercel.json` já define:
 
 Detalhes em **DEPLOY.md** e **INIT.md**.
 
+## Arquitetura e melhorias (Clean Code / SOLID)
+
+Para organizar o projeto em sprints de refatoração (expandir, manter e escalar com mais clareza), veja **[docs/SPRINTS-ARQUITETURA-CLEAN-SOLID.md](docs/SPRINTS-ARQUITETURA-CLEAN-SOLID.md)**. O documento inclui análise do estado atual, visão da arquitetura alvo e sprints com tarefas, critérios de conclusão e ordem sugerida.
+
 ## Notas de UX
 
 - Sistema focado em **visibilidade**, não em controle.  
