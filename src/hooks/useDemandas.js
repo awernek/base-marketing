@@ -68,7 +68,7 @@ export function useDemandas(opts = {}) {
         if (ate) params.ate = ate;
         data = await demandasApi.listar(params);
       }
-      setDemandas(Array.isArray(data) ? data : []);
+      setDemandas(Array.isArray(data) ? [...data] : []);
     } catch (err) {
       console.error('useDemandas:', err);
       if (!silent) setError(err?.message || 'Erro ao carregar demandas');
