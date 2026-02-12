@@ -1,5 +1,6 @@
 import { PrioridadeDemanda } from '../../utils/enums';
 import DemandaCard from './DemandaCard';
+import EmptyState from '../shared/EmptyState';
 
 export default function DemandasList({
   demandas,
@@ -11,6 +12,8 @@ export default function DemandasList({
   onEditar,
   onConcluir,
   onComentarios,
+  emptyActionLabel,
+  onEmptyAction,
 }) {
   const demandasOrdenadas = [...demandas].sort((a, b) => {
     const prioridadeOrder = { [PrioridadeDemanda.ALTA]: 0, [PrioridadeDemanda.MEDIA]: 1, [PrioridadeDemanda.BAIXA]: 2 };
@@ -21,8 +24,14 @@ export default function DemandasList({
 
   if (demandasOrdenadas.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
-        Nenhuma demanda nesta lista.
+      <div className="bg-white rounded-xl border border-gray-200 shadow-ds-sm overflow-hidden">
+        <EmptyState
+          icon="📋"
+          title="Nenhuma demanda nesta lista"
+          description="Crie uma nova demanda ou ajuste os filtros."
+          actionLabel={emptyActionLabel}
+          onAction={onEmptyAction}
+        />
       </div>
     );
   }

@@ -1,31 +1,28 @@
-import { Link } from 'react-router-dom';
-import { getStatusEmoji } from '../../utils/enums';
+import PrazoCard from './PrazoCard';
 
 /**
- * Seção "Próximos prazos (7 dias)" no dashboard.
+ * Seção "Próximos Prazos (7 dias)" com cards compactos.
  */
 export default function ProximosPrazos({ demandas = [], maxItems = 10 }) {
   if (demandas.length === 0) return null;
   const slice = demandas.slice(0, maxItems);
+
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">📅 Próximos prazos (7 dias)</h2>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <ul className="space-y-2">
-          {slice.map(d => (
-            <li key={d.id} className="text-sm text-blue-900 flex items-center gap-2 flex-wrap">
-              <span>{getStatusEmoji(d.status)}</span>
-              <span className="font-medium">{d.titulo}</span>
-              <span className="text-blue-700">
-                prazo {new Date(d.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
-              </span>
-              <span>{d.responsavelNome || '—'}</span>
-              <Link to="/demandas" className="text-blue-600 hover:underline text-xs">Ver demandas</Link>
-            </li>
+      <div className="bg-white rounded-xl p-6 shadow-ds-sm border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <span aria-hidden="true">📅</span> Próximos Prazos
+            <span className="text-xs font-normal text-gray-500">(7 dias)</span>
+          </h2>
+        </div>
+        <div className="space-y-2">
+          {slice.map((d) => (
+            <PrazoCard key={d.id} demanda={d} />
           ))}
-        </ul>
+        </div>
         {demandas.length > maxItems && (
-          <p className="text-xs text-blue-700 mt-2">+ {demandas.length - maxItems} mais</p>
+          <p className="text-xs text-gray-500 mt-3">+ {demandas.length - maxItems} mais</p>
         )}
       </div>
     </section>

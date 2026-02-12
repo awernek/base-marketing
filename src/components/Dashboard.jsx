@@ -3,8 +3,14 @@ import { Link } from 'react-router-dom';
 import { pessoasApi, demandasApi, dashboardApi, checkinsApi, empreendimentosApi, authApi } from '../services/api';
 import Modal from './shared/Modal';
 import DemandaForm from './shared/DemandaForm';
-import DemandasRisco from './dashboard/DemandasRisco';
 import ProximosPrazos from './dashboard/ProximosPrazos';
+import MetricCard from './dashboard/MetricCard';
+import PessoaCard from './dashboard/PessoaCard';
+import AlertaCard from './dashboard/AlertaCard';
+import DemandaCompactCard from './dashboard/DemandaCompactCard';
+import Button from './shared/Button';
+import { DashboardSkeleton } from './shared/Skeleton';
+import { useToast } from '../contexts/ToastContext';
 import { getInitialDemandaForm, demandaToForm, formToDemandaPayload } from '../utils/formDemanda';
 import {
   getCargaEmojiFromString,
@@ -23,6 +29,7 @@ import {
 } from '../utils/enums';
 
 function Dashboard() {
+  const { addToast } = useToast();
   const [pessoas, setPessoas] = useState([]);
   const [pessoasLista, setPessoasLista] = useState([]);
   const [empreendimentosLista, setEmpreendimentosLista] = useState([]);
@@ -59,8 +66,10 @@ function Dashboard() {
 
   const [novaDemanda, setNovaDemanda] = useState(() => getInitialDemandaForm());
   const [criandoDemanda, setCriandoDemanda] = useState(false);
+  const [erroCriarDemanda, setErroCriarDemanda] = useState(null);
   const [editDemandaForm, setEditDemandaForm] = useState(() => getInitialDemandaForm());
   const [salvandoDemanda, setSalvandoDemanda] = useState(false);
+  const [erroEditarDemanda, setErroEditarDemanda] = useState(null);
   const [atualizandoStatus, setAtualizandoStatus] = useState(null);
 
   // Form nova pessoa
@@ -256,14 +265,17 @@ function Dashboard() {
   async function handleCriarDemanda(e) {
     e?.preventDefault?.();
     setCriandoDemanda(true);
+    setErroCriarDemanda(null);
     try {
       await demandasApi.criar(formToDemandaPayload(novaDemanda));
       setShowNovaDemanda(false);
       setNovaDemanda(getInitialDemandaForm());
+      setErroCriarDemanda(null);
+      addToast('success', 'Demanda criada com sucesso.');
       await loadData();
     } catch (err) {
       console.error('Erro ao criar demanda:', err);
-      alert(err?.message || 'Erro ao criar demanda.');
+      setErroCriarDemanda(err?.message || 'Erro ao criar demanda.');
     } finally {
       setCriandoDemanda(false);
     }
@@ -291,13 +303,16 @@ function Dashboard() {
     e?.preventDefault?.();
     if (!demandaEmEdicao) return;
     setSalvandoDemanda(true);
+    setErroEditarDemanda(null);
     try {
       await demandasApi.atualizar(demandaEmEdicao.id, formToDemandaPayload(editDemandaForm));
       setDemandaEmEdicao(null);
+      setErroEditarDemanda(null);
+      addToast('success', 'Demanda atualizada com sucesso.');
       await loadData();
     } catch (err) {
       console.error('Erro ao editar demanda:', err);
-      alert(err?.message || 'Erro ao editar demanda. Tente novamente.');
+      setErroEditarDemanda(err?.message || 'Erro ao editar demanda. Tente novamente.');
     } finally {
       setSalvandoDemanda(false);
     }
@@ -350,8 +365,8 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Carregando...</p>
+      <div className="min-h-screen bg-gray-50">
+        <DashboardSkeleton />
       </div>
     );
   }
@@ -367,63 +382,73 @@ function Dashboard() {
     );
   }
 
+  const totalPessoas = overview?.totalPessoasAtivas ?? overview?.totalPessoas ?? 0;
+  const totalDemandasAtivas = overview?.totalDemandasAtivas ?? overview?.demandasAtivas ?? demandas.length;
+  const totalConcluidas = overview?.demandasConcluidas ?? 0;
+  const totalEmRisco = overview?.emRisco ?? countDemandasEmRisco;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-gray-900">Base — Visão Geral</h1>
-            {overview && (
-              <div className="flex gap-4 text-sm text-gray-500">
-                <span>{overview.totalPessoasAtivas} pessoas</span>
-                <span>{overview.totalDemandasAtivas} demandas ativas</span>
-                {overview.checkInsPendentes > 0 && (
-                  <span className="text-yellow-600">{overview.checkInsPendentes} check-ins pendentes</span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">Visão geral do time e demandas</p>
+        </div>
+
+        {/* Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            icon="📋"
+            titulo="Demandas Ativas"
+            valor={totalDemandasAtivas}
+            mudanca="ativas"
+            tipo="neutro"
+          />
+          <MetricCard
+            icon="⚠️"
+            titulo="Em Risco"
+            valor={totalEmRisco}
+            mudanca={totalEmRisco > 0 ? 'requer atenção' : 'nenhuma'}
+            tipo={totalEmRisco > 0 ? 'negativo' : 'neutro'}
+          />
+          <MetricCard
+            icon="✅"
+            titulo="Concluídas"
+            valor={totalConcluidas}
+            mudanca="total"
+            tipo="neutro"
+          />
+          <MetricCard
+            icon="👥"
+            titulo="Time Ativo"
+            valor={totalPessoas}
+            mudanca="pessoas"
+            tipo="neutro"
+          />
+        </div>
+
         {/* Time */}
         <section className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">🟢 Time</h2>
-            <button
-              onClick={() => setShowNovaPessoa(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <span aria-hidden="true">🟢</span> Time
+            </h2>
+            <Button variant="primary" onClick={() => setShowNovaPessoa(true)}>
               + Nova pessoa
-            </button>
+            </Button>
           </div>
           {pessoas.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center shadow-ds-sm">
               <p className="text-gray-500 mb-4">Nenhuma pessoa cadastrada ainda.</p>
-              <button
-                onClick={() => setShowNovaPessoa(true)}
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-              >
+              <Button variant="ghost" onClick={() => setShowNovaPessoa(true)}>
                 Cadastrar primeira pessoa →
-              </button>
+              </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {pessoas.map(pessoa => (
-                <button
-                  key={pessoa.id}
-                  onClick={() => handleSelectPessoa(pessoa)}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-400 hover:shadow-md transition-all text-left"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900">{pessoa.nome.split(' ')[0]}</span>
-                    <span className="text-2xl">{getCargaEmojiFromString(pessoa.cargaAtual)}</span>
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize">{pessoa.cargaAtual || '—'}</div>
-                  <div className="text-xs text-gray-500 mt-1">{pessoa.demandasAtivas} demandas</div>
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {pessoasLista.map((pessoa) => (
+                <PessoaCard key={pessoa.id} pessoa={pessoa} onClick={handleSelectPessoa} />
               ))}
             </div>
           )}
@@ -431,95 +456,78 @@ function Dashboard() {
 
         <ProximosPrazos demandas={proximosPrazos} maxItems={10} />
 
+        {/* Alertas */}
         {(pessoasComCargaAlta.length > 0 || countDemandasEmRisco > 0) && (
           <section className="mb-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">⚠️ Alertas</h2>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2">
-              {pessoasComCargaAlta.map(pessoa => (
-                <div key={pessoa.id} className="text-sm text-yellow-900">
-                  • <strong>{pessoa.nome}:</strong> {pessoa.demandasAtivas} demandas ativas + carga alta
-                </div>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+              <span aria-hidden="true">⚠️</span> Alertas
+              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                {pessoasComCargaAlta.length + (countDemandasEmRisco > 0 ? 1 : 0)}
+              </span>
+            </h2>
+            <div className="space-y-3">
+              {pessoasComCargaAlta.map((pessoa) => (
+                <AlertaCard
+                  key={pessoa.id}
+                  titulo={pessoa.nome}
+                  mensagem={`${pessoa.demandasAtivas} demandas ativas + carga alta`}
+                  link="/demandas"
+                  linkLabel="Ver demandas"
+                />
               ))}
-              <DemandasRisco count={countDemandasEmRisco} />
+              {countDemandasEmRisco > 0 && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border-l-4 border-yellow-500">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <span className="text-yellow-700 text-lg" aria-hidden="true">⚠️</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-gray-900 mb-1">Demandas em risco</h4>
+                      <p className="text-sm text-gray-700">
+                        {countDemandasEmRisco} {countDemandasEmRisco === 1 ? 'demanda' : 'demandas'} em risco
+                      </p>
+                    </div>
+                    <Link
+                      to="/demandas?filtro=risco"
+                      className="text-sm font-medium text-yellow-700 hover:text-yellow-800 whitespace-nowrap shrink-0"
+                    >
+                      Ver em risco →
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
 
-        {/* Demandas Ativas */}
+        {/* Demandas Ativas (grid compacto) */}
         <section>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">📋 Demandas Ativas ({demandas.length})</h2>
-            <button
-              onClick={() => setShowNovaDemanda(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              + Nova demanda
-            </button>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <span aria-hidden="true">📋</span> Demandas Ativas
+              <span className="px-2 py-0.5 bg-primary-blue-light text-primary-blue rounded-full text-xs font-semibold">
+                {demandas.length}
+              </span>
+            </h2>
+            <div className="flex gap-2">
+              <Link to="/demandas" className="text-sm font-medium text-primary-blue hover:text-primary-blue-dark">
+                Ver todas →
+              </Link>
+              <Button variant="primary" onClick={() => setShowNovaDemanda(true)}>
+                + Nova demanda
+              </Button>
+            </div>
           </div>
-          <div className="space-y-3">
-            {demandasOrdenadas.map(demanda => (
-              <div key={demanda.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 mb-2">{demanda.titulo}</h3>
-                    {demanda.descricao && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{demanda.descricao}</p>
-                    )}
-                    <div className="flex flex-wrap gap-3 text-sm text-gray-600 items-center">
-                      <span>{getPrioridadeEmoji(demanda.prioridade)} {prioridadeLabels[demanda.prioridade] ?? ''}</span>
-                      <span>{getStatusEmoji(demanda.status)} {statusLabels[demanda.status] ?? ''}</span>
-                      <select
-                        value={demanda.status ?? ''}
-                        onChange={(e) => handleAlterarStatus(demanda.id, Number(e.target.value))}
-                        disabled={atualizandoStatus === demanda.id}
-                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                        title="Alterar status"
-                      >
-                        <option value={StatusDemanda.OK}>OK</option>
-                        <option value={StatusDemanda.ATENCAO}>Atenção</option>
-                        <option value={StatusDemanda.RISCO}>Risco</option>
-                      </select>
-                      <span>•</span>
-                      <span>prazo {new Date(demanda.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
-                      <span>•</span>
-                      <span>{demanda.responsavelNome || '—'}</span>
-                      {demanda.empreendimentoNome && <span className="text-gray-500">· {demanda.empreendimentoNome}</span>}
-                      {demanda.link && (
-                        <a href={demanda.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">Link</a>
-                      )}
-                    </div>
-                    <div className="mt-2 flex gap-2 flex-wrap items-center">
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-700">
-                        {getPrioridadeEmoji(demanda.prioridade)} {prioridadeLabels[demanda.prioridade] ?? ''}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-700">
-                        {tipoLabels[demanda.tipo] || ''}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-xs text-blue-700">
-                        {impactoLabels[demanda.impacto] || ''}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleAbrirEditarDemanda(demanda)}
-                        className="text-xs text-blue-600 hover:text-blue-800 border border-blue-300 hover:border-blue-500 rounded px-2 py-1"
-                        title="Editar demanda"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleConcluirDemanda(demanda)}
-                        className="text-xs text-green-600 hover:text-green-800 border border-green-300 hover:border-green-500 rounded px-2 py-1"
-                        title="Marcar como concluída"
-                      >
-                        ✓ Concluir
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {demandasOrdenadas.slice(0, 6).map((demanda) => (
+              <DemandaCompactCard key={demanda.id} demanda={demanda} />
             ))}
           </div>
+          {demandasOrdenadas.length > 6 && (
+            <p className="text-sm text-gray-500 mt-3">
+              Mostrando 6 de {demandasOrdenadas.length}. <Link to="/demandas" className="text-primary-blue hover:underline">Ver todas</Link>
+            </p>
+          )}
         </section>
       </main>
 
@@ -795,29 +803,33 @@ function Dashboard() {
         </div>
       )}
 
-      <Modal open={showNovaDemanda} onClose={() => setShowNovaDemanda(false)} title="Nova Demanda">
+      <Modal open={showNovaDemanda} onClose={() => { setShowNovaDemanda(false); setErroCriarDemanda(null); }} title="Nova Demanda">
         <DemandaForm
           value={novaDemanda}
           onChange={setNovaDemanda}
           onSubmit={handleCriarDemanda}
-          onCancel={() => setShowNovaDemanda(false)}
+          onCancel={() => { setShowNovaDemanda(false); setErroCriarDemanda(null); }}
           submitting={criandoDemanda}
           submitLabel="Criar demanda"
           pessoasLista={pessoasLista}
           empreendimentosLista={empreendimentosLista}
+          error={erroCriarDemanda}
+          onDismissError={() => setErroCriarDemanda(null)}
         />
       </Modal>
 
-      <Modal open={!!demandaEmEdicao} onClose={() => setDemandaEmEdicao(null)} title="Editar Demanda">
+      <Modal open={!!demandaEmEdicao} onClose={() => { setDemandaEmEdicao(null); setErroEditarDemanda(null); }} title="Editar Demanda">
         <DemandaForm
           value={editDemandaForm}
           onChange={setEditDemandaForm}
           onSubmit={handleSalvarEditarDemanda}
-          onCancel={() => setDemandaEmEdicao(null)}
+          onCancel={() => { setDemandaEmEdicao(null); setErroEditarDemanda(null); }}
           submitting={salvandoDemanda}
           submitLabel="Salvar"
           pessoasLista={pessoasLista}
           empreendimentosLista={empreendimentosLista}
+          error={erroEditarDemanda}
+          onDismissError={() => setErroEditarDemanda(null)}
         />
       </Modal>
 
