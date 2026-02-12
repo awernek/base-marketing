@@ -148,10 +148,10 @@ export default function DemandasPage() {
 
   return (
     <div className={isKanbanView ? 'h-screen flex flex-col bg-gray-50' : 'min-h-screen bg-gray-50'}>
-      <main className={isKanbanView ? 'flex flex-col flex-1 min-h-0' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
+      <main className={isKanbanView ? 'flex flex-col flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
         {/* Header: título + abas + filtros + ações */}
-        <div className={isKanbanView ? 'shrink-0 bg-white border-b border-gray-200 px-4 md:px-6 py-4' : ''}>
-          <div className={!isKanbanView ? '' : 'max-w-full'}>
+        <div className={isKanbanView ? 'shrink-0 bg-white border-b border-gray-200 py-4' : ''}>
+          <div className={!isKanbanView ? '' : 'w-full'}>
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <h1 className="text-2xl font-semibold text-gray-900">
                 {isDesigner ? 'Minhas demandas' : 'Demandas'}
@@ -227,7 +227,7 @@ export default function DemandasPage() {
         </div>
 
         {/* Conteúdo: Kanban (flex-1) ou Lista */}
-        <div className={isKanbanView ? 'flex-1 min-h-0 px-4 md:px-6 py-4' : ''}>
+        <div className={isKanbanView ? 'flex-1 min-h-0 py-4' : ''}>
           {isKanbanView ? (
             <KanbanBoard demandas={demandas} setDemandas={setDemandas} onAbrirComentarios={demanda => setDemandaComentarios(demanda)} />
           ) : (
