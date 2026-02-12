@@ -112,15 +112,14 @@ export default function DemandaForm({
         </select>
       </div>
       <div>
-        <label className={labelClass} htmlFor="demanda-responsavel">Responsável</label>
+        <label className={labelClass} htmlFor="demanda-responsavel">Responsável (opcional)</label>
         <select
           id="demanda-responsavel"
-          required
           value={value.responsavelId ?? ''}
           onChange={(e) => set('responsavelId', e.target.value)}
           className={inputClass}
         >
-          <option value="">Selecione...</option>
+          <option value="">— Nenhum / Definir depois —</option>
           {pessoasLista.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nome} — carga {p.cargaAtual || '—'}, {p.demandasAtivas ?? 0} demanda(s)

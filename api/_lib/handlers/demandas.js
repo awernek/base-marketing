@@ -67,8 +67,7 @@ export async function criar(req, res, params, user) {
   if (!b.titulo) return badRequest(res, 'Título é obrigatório.');
   if (b.tipo === undefined || b.tipo === null) return badRequest(res, 'Tipo é obrigatório.');
 
-  const isCoordenador = user.tipo === TipoUsuario.COORDENADOR;
-  const responsavelId = isCoordenador && b.responsavelId != null ? b.responsavelId : null;
+  const responsavelId = b.responsavelId != null && b.responsavelId !== '' ? parseInt(b.responsavelId, 10) : null;
   const prazo = b.prazo || null;
   const prioridade = b.prioridade != null ? b.prioridade : null;
 

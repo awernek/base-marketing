@@ -79,7 +79,7 @@ export default function DemandasPage() {
     isCoordenador,
     user,
   });
-  const { pessoas: pessoasLista, refetch: refetchPessoas } = usePessoas(isCoordenador);
+  const { pessoas: pessoasLista, refetch: refetchPessoas } = usePessoas(true);
   const { lista: empreendimentosLista } = useEmpreendimentosLista(true);
 
   useEffect(() => {
