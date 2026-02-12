@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { demandasApi } from '../../services/api';
 import { useDemandas } from '../../hooks/useDemandas';
+import { useDemandasRealtime } from '../../hooks/useDemandasRealtime';
 import { usePessoas } from '../../hooks/usePessoas';
 import { useEmpreendimentosLista } from '../../hooks/useEmpreendimentosLista';
 import { useIsMobile } from '../../hooks/useMediaQuery';
@@ -88,6 +89,12 @@ export default function DemandasPage() {
 
   const { pessoas: pessoasLista, refetch: refetchPessoas } = usePessoas(true);
   const { lista: empreendimentosLista } = useEmpreendimentosLista(true);
+
+  // Realtime: sincroniza automaticamente quando outro usuário move/edita demandas
+  useDemandasRealtime({
+    refetch: refreshDemandas,
+    enabled: filtro === 'ativas' || filtro === 'aguardando',
+  });
 
   useEffect(() => {
     setFiltro(filtroInicial);
