@@ -226,9 +226,9 @@ export async function atualizarEtapa(req, res, params, user) {
     const responsavelId = d.responsavel_id != null ? Number(d.responsavel_id) : null;
     const meuPessoaId = user.pessoaId != null ? Number(user.pessoaId) : null;
     if (responsavelId !== meuPessoaId) return forbidden(res);
-    const etapaAtual = (d.etapa != null && d.etapa !== '') ? String(d.etapa).trim() : 'a_fazer';
-    const etapaDestino = (etapa != null && etapa !== '') ? String(etapa).trim() : '';
-    if (!ETAPAS_EXECUCAO.includes(etapaAtual) || !ETAPAS_EXECUCAO.includes(etapaDestino)) {
+    // Só validar destino: designer só pode mover para etapas de execução (não para aguardando_priorizacao)
+    const etapaDestino = (etapa != null && etapa !== '') ? String(etapa).trim().replace(/\s+/g, '_') : '';
+    if (!ETAPAS_EXECUCAO.includes(etapaDestino)) {
       return forbidden(res, 'Designer só pode mover demandas entre A Fazer, Em Andamento, Revisão e Concluído.');
     }
   }
