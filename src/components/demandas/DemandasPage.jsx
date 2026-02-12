@@ -17,6 +17,22 @@ import ConfirmDialog from '../shared/ConfirmDialog';
 import { getInitialDemandaForm, demandaToForm, formToDemandaPayload } from '../../utils/formDemanda';
 import DemandasList from './DemandasList';
 
+const STORAGE_KEY_VIEW = 'demandas-vista';
+
+function getVistaInicial() {
+  try {
+    return localStorage.getItem(STORAGE_KEY_VIEW) === 'kanban';
+  } catch {
+    return false;
+  }
+}
+
+function salvarVista(kanban) {
+  try {
+    localStorage.setItem(STORAGE_KEY_VIEW, kanban ? 'kanban' : 'lista');
+  } catch (_) {}
+}
+
 export default function DemandasPage() {
   const { user, isCoordenador, isDesigner } = useAuth();
   const { addToast } = useToast();
@@ -30,7 +46,7 @@ export default function DemandasPage() {
   const [filtroResponsavelId, setFiltroResponsavelId] = useState('');
   const [filtroDe, setFiltroDe] = useState('');
   const [filtroAte, setFiltroAte] = useState('');
-  const [vistaKanban, setVistaKanban] = useState(false);
+  const [vistaKanban, setVistaKanban] = useState(getVistaInicial);
   const [showNovaDemanda, setShowNovaDemanda] = useState(false);
   const [demandaEmEdicao, setDemandaEmEdicao] = useState(null);
   const [novaDemanda, setNovaDemanda] = useState(() => getInitialDemandaForm());
@@ -171,8 +187,8 @@ export default function DemandasPage() {
                   ))}
                   {filtro === 'ativas' && (
                     <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                      <button type="button" onClick={() => setVistaKanban(false)} className={`px-3 py-2 text-sm font-medium ${!vistaKanban ? 'bg-primary-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Lista</button>
-                      <button type="button" onClick={() => setVistaKanban(true)} className={`px-3 py-2 text-sm font-medium ${vistaKanban ? 'bg-primary-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Kanban</button>
+                      <button type="button" onClick={() => { setVistaKanban(false); salvarVista(false); }} className={`px-3 py-2 text-sm font-medium ${!vistaKanban ? 'bg-primary-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Lista</button>
+                      <button type="button" onClick={() => { setVistaKanban(true); salvarVista(true); }} className={`px-3 py-2 text-sm font-medium ${vistaKanban ? 'bg-primary-blue text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>Kanban</button>
                     </div>
                   )}
                   {isCoordenador && (
