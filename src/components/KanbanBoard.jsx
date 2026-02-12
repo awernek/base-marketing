@@ -69,8 +69,12 @@ export default function KanbanBoard({
       return;
     }
 
-    // Designer só pode arrastar demandas onde é responsável
-    if (isDesigner && demanda.responsavelId !== userPessoaId) return;
+    // Designer só pode arrastar demandas onde é responsável (comparação numérica para evitar 5 !== "5")
+    if (isDesigner) {
+      const respId = demanda.responsavelId != null ? Number(demanda.responsavelId) : null;
+      const meuId = userPessoaId != null ? Number(userPessoaId) : null;
+      if (respId !== meuId) return;
+    }
 
     demandasApi
       .atualizarEtapa(demandaId, novaEtapa)
