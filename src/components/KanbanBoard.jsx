@@ -34,6 +34,7 @@ export default function KanbanBoard({
   userPessoaId = null,
   onPegarDemanda = null,
   onEditarDemanda = null,
+  onRefetchDemandas = null,
 }) {
   const [activeId, setActiveId] = useState(null);
   const [mobileTab, setMobileTab] = useState('a_fazer');
@@ -87,6 +88,7 @@ export default function KanbanBoard({
               : d
           )
         );
+        onRefetchDemandas?.({ silent: true });
       })
       .catch(err => {
         alert(err?.message || 'Erro ao mover demanda.');

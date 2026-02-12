@@ -120,7 +120,7 @@ export default function DemandasPage() {
       setDemandaEmEdicao(null);
       setErroEditar(null);
       addToast('success', 'Demanda atualizada com sucesso.');
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
     } catch (err) {
       setErroEditar(err?.message || 'Erro ao editar demanda.');
     } finally {
@@ -138,7 +138,7 @@ export default function DemandasPage() {
       setNovaDemanda(getInitialDemandaForm());
       setErroCriar(null);
       addToast('success', isDesigner ? 'Demanda criada e aguardando priorização.' : 'Demanda criada com sucesso.');
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
       await refetchPessoas();
     } catch (err) {
       setErroCriar(err?.message || 'Erro ao criar demanda.');
@@ -156,7 +156,7 @@ export default function DemandasPage() {
     try {
       await demandasApi.concluir(concluirDemanda.id);
       setConcluirDemanda(null);
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
     } catch (err) {
       alert(err?.message || 'Erro ao concluir demanda.');
     }
@@ -183,7 +183,7 @@ export default function DemandasPage() {
       });
       setPriorizarDemanda(null);
       addToast('success', 'Demanda priorizada.');
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
       await refetchPessoas();
     } catch (err) {
       alert(err?.message || 'Erro ao priorizar.');
@@ -218,7 +218,7 @@ export default function DemandasPage() {
       await demandasApi.atualizar(demandaParaAtribuir.id, payload);
       setDemandaParaAtribuir(null);
       addToast('success', 'Responsável atualizado.');
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
     } catch (err) {
       alert(err?.message || 'Erro ao atribuir.');
     } finally {
@@ -231,7 +231,7 @@ export default function DemandasPage() {
     try {
       await demandasApi.pegar(demanda.id);
       addToast('success', 'Demanda atribuída a você.');
-      await refetchDemandas();
+      await refetchDemandas({ silent: true });
     } catch (err) {
       alert(err?.message || 'Erro ao pegar demanda.');
     }
@@ -365,6 +365,7 @@ export default function DemandasPage() {
               userPessoaId={user?.pessoaId}
               onPegarDemanda={isDesigner ? handlePegarDemanda : null}
               onEditarDemanda={handleAbrirEditarDemanda}
+              onRefetchDemandas={refetchDemandas}
             />
           ) : (
             <DemandasList
@@ -387,7 +388,7 @@ export default function DemandasPage() {
 
       <Modal open={!!demandaComentarios} onClose={() => setDemandaComentarios(null)} title={demandaComentarios ? `Comentários — ${demandaComentarios.titulo}` : ''} maxWidth="max-w-[600px]">
         {demandaComentarios && (
-          <Comentarios demandaId={demandaComentarios.id} onComentarioAdicionado={refetchDemandas} />
+          <Comentarios demandaId={demandaComentarios.id} onComentarioAdicionado={() => refetchDemandas({ silent: true })} />
         )}
       </Modal>
 

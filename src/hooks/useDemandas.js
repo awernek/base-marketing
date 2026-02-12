@@ -32,8 +32,9 @@ export function useDemandas(opts = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const refetch = useCallback(async () => {
-    setLoading(true);
+  const refetch = useCallback(async (options = {}) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     setError(null);
     try {
       let data = [];
@@ -70,10 +71,10 @@ export function useDemandas(opts = {}) {
       setDemandas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('useDemandas:', err);
-      setError(err?.message || 'Erro ao carregar demandas');
+      if (!silent) setError(err?.message || 'Erro ao carregar demandas');
       setDemandas([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [filtro, etapa, empreendimentoId, prioridade, responsavelId, de, ate, isCoordenador]);
 
