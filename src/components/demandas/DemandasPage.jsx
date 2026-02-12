@@ -364,6 +364,7 @@ export default function DemandasPage() {
               isDesigner={isDesigner}
               userPessoaId={user?.pessoaId}
               onPegarDemanda={isDesigner ? handlePegarDemanda : null}
+              onEditarDemanda={handleAbrirEditarDemanda}
             />
           ) : (
             <DemandasList

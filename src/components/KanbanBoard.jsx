@@ -33,6 +33,7 @@ export default function KanbanBoard({
   isDesigner = false,
   userPessoaId = null,
   onPegarDemanda = null,
+  onEditarDemanda = null,
 }) {
   const [activeId, setActiveId] = useState(null);
   const [mobileTab, setMobileTab] = useState('a_fazer');
@@ -138,6 +139,7 @@ export default function KanbanBoard({
               isDesigner={isDesigner}
               userPessoaId={userPessoaId}
               onPegarDemanda={onPegarDemanda}
+              onEditarDemanda={onEditarDemanda}
             />
           ))}
         </div>

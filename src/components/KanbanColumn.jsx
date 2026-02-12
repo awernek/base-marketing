@@ -26,8 +26,9 @@ const TIPO_BADGE_CLASS = {
  * Card de demanda no Kanban: grip, prioridade, avatar, título, tipo, footer, comentários.
  * Pode ser usado dentro de useDraggable (no column) ou estático (no DragOverlay).
  * isDisponivel + onPegar: designer vê card "disponível" (A Fazer sem responsável) com botão Pegar.
+ * onEditar + podeEditar: abre modal de edição (formato compacto no card).
  */
-export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar }) {
+export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar }) {
   const tipoClass = TIPO_BADGE_CLASS[demanda.tipo] ?? TIPO_BADGE_CLASS[4];
   const tipoLabel = tipoLabels[demanda.tipo] ?? 'Outro';
 
@@ -88,6 +89,19 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay,
             {demanda.comentariosCount === 1 ? 'comentário' : 'comentários'}
           </button>
         )}
+        {!isOverlay && onEditar && podeEditar && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditar(demanda);
+            }}
+            className="text-xs text-gray-500 hover:text-primary-blue flex items-center gap-1"
+            title="Editar demanda"
+          >
+            <span aria-hidden="true">✏️</span> Editar
+          </button>
+        )}
         {isDisponivel && onPegar && (
           <button
             type="button"
@@ -118,7 +132,7 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay,
 }
 
 /** Wrapper que torna o card arrastável (useDraggable). Designer: só arrastável quando é minha demanda. */
-function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar }) {
+function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: String(demanda.id),
     data: { demanda, etapaAtual: demanda.etapa },
@@ -135,12 +149,14 @@ function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoorde
         onAtribuirResponsavel={onAtribuirResponsavel}
         isDisponivel={isDisponivel}
         onPegar={onPegar}
+        onEditar={onEditar}
+        podeEditar={podeEditar}
       />
     </div>
   );
 }
 
-export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth, isCoordenador, pessoasLista, onAtribuirResponsavel, isDesigner, userPessoaId, onPegarDemanda }) {
+export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth, isCoordenador, pessoasLista, onAtribuirResponsavel, isDesigner, userPessoaId, onPegarDemanda, onEditarDemanda }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const titulo = ETAPA_TITULOS[etapa] ?? etapa;
   const headerClass = ETAPA_HEADER_CLASS[etapa] ?? ETAPA_HEADER_CLASS.a_fazer;
@@ -176,6 +192,7 @@ export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, acti
         ) : (
           demandas.map((demanda) => {
             const isDisponivel = isDesigner && etapa === 'a_fazer' && (demanda.responsavelId == null || demanda.responsavelId === '');
+            const podeEditar = isCoordenador || (isDesigner && (demanda.responsavelId != null && Number(demanda.responsavelId) === Number(userPessoaId)));
             return (
               <KanbanCardDraggable
                 key={demanda.id}
@@ -186,6 +203,8 @@ export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, acti
                 onAtribuirResponsavel={onAtribuirResponsavel}
                 isDisponivel={isDisponivel}
                 onPegar={onPegarDemanda}
+                onEditar={onEditarDemanda}
+                podeEditar={podeEditar}
               />
             );
           })
