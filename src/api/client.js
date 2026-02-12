@@ -3,7 +3,7 @@
  * Toda chamada à API deve passar por request().
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 export function getToken() {
   return localStorage.getItem('token');
@@ -19,7 +19,8 @@ export async function request(path, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const url = path.startsWith('http') ? path : `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  const response = await fetch(url, {
     ...options,
     headers,
   });

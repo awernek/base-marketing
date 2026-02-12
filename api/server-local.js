@@ -8,6 +8,14 @@ import { route } from './_lib/router.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
 function getBody(req) {
   return new Promise((resolve) => {
     let data = '';
@@ -55,6 +63,13 @@ function createRes(res) {
 }
 
 const server = http.createServer(async (req, res) => {
+  setCors(res);
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   const url = req.url || '/';
   const body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await getBody(req) : {};
   const headers = {};
