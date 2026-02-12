@@ -124,7 +124,7 @@ export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, acti
       ref={setNodeRef}
       className={`
         flex flex-col rounded-xl shadow-ds-sm border-2 transition-colors
-        ${fullWidth ? 'w-full min-w-0 flex-1' : 'flex-shrink-0 w-80'}
+        ${fullWidth ? 'w-full min-w-0 flex-1' : 'flex-1 min-w-64'}
         ${isOver ? 'border-primary-blue bg-primary-blue-light/50' : 'border-gray-200 bg-gray-50'}
       `}
       data-column-etapa={etapa}

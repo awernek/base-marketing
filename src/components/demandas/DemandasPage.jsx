@@ -164,7 +164,7 @@ export default function DemandasPage() {
 
   return (
     <div className={isKanbanView ? 'h-screen flex flex-col bg-gray-50' : 'min-h-screen bg-gray-50'}>
-      <main className={isKanbanView ? 'flex flex-col flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
+      <main className={isKanbanView ? 'flex flex-col flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
         {/* Header: título + abas + filtros + ações */}
         <div className={isKanbanView ? 'shrink-0 bg-white border-b border-gray-200 py-4' : ''}>
           <div className={!isKanbanView ? '' : 'w-full'}>

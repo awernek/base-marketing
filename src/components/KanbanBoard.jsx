@@ -97,8 +97,8 @@ export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios 
           </div>
         )}
 
-        {/* Desktop: todas as colunas | Mobile: só a coluna ativa */}
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 min-h-[600px] flex-1">
+        {/* Desktop: todas as colunas ocupam a largura disponível | Mobile: só a coluna ativa */}
+        <div className={`flex gap-4 pb-4 min-h-[600px] flex-1 min-w-0 ${isMobile ? '' : 'overflow-y-hidden'}`}>
           {(isMobile ? [mobileTab] : ETAPAS_ORDEM).map((etapa) => (
             <KanbanColumn
               key={etapa}
