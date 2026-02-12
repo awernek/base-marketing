@@ -112,23 +112,23 @@ export default function DemandaCard({
               Priorizar
             </button>
           )}
-          {isCoordenador && filtro !== 'concluidas' && filtro !== 'aguardando' && (
-            <>
-              <button
-                type="button"
-                onClick={() => onEditar(demanda)}
-                className="text-xs font-medium text-primary-blue hover:text-primary-blue-dark border border-gray-300 rounded-lg px-2 py-1.5 hover:bg-gray-50"
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                onClick={() => onConcluir(demanda)}
-                className="text-xs font-medium text-green-600 hover:text-green-800 border border-green-300 rounded-lg px-2 py-1.5 hover:bg-green-50"
-              >
-                ✓ Concluir
-              </button>
-            </>
+          {onEditar && filtro !== 'aguardando' && (isCoordenador || podeAlterarStatus(demanda)) && (
+            <button
+              type="button"
+              onClick={() => onEditar(demanda)}
+              className="text-xs font-medium text-primary-blue hover:text-primary-blue-dark border border-gray-300 rounded-lg px-2 py-1.5 hover:bg-gray-50"
+            >
+              Editar
+            </button>
+          )}
+          {isCoordenador && filtro !== 'concluidas' && filtro !== 'aguardando' && onConcluir && (
+            <button
+              type="button"
+              onClick={() => onConcluir(demanda)}
+              className="text-xs font-medium text-green-600 hover:text-green-800 border border-green-300 rounded-lg px-2 py-1.5 hover:bg-green-50"
+            >
+              ✓ Concluir
+            </button>
           )}
         </div>
       </div>
