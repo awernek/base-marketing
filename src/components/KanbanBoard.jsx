@@ -4,17 +4,16 @@ import KanbanColumn from './KanbanColumn';
 import { KanbanCard } from './KanbanColumn';
 import { demandasApi } from '../services/api';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { ETAPAS_KANBAN, ETAPAS_EXECUCAO, etapaLabels } from '../utils/enums';
 
-const ETAPAS_ORDEM = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
-const ETAPA_LABELS = {
-  a_fazer: 'Backlog',
-  em_andamento: 'Em Andamento',
-  em_revisao: 'Revisão',
-  concluido: 'Concluído',
-};
+const ETAPA_LABELS = etapaLabels;
 
-function groupByEtapa(demandas) {
-  const map = { a_fazer: [], em_andamento: [], em_revisao: [], concluido: [] };
+function groupByEtapa(demandas, incluirAguardando) {
+  const keys = incluirAguardando
+    ? ['aguardando_priorizacao', 'a_fazer', 'em_andamento', 'em_revisao', 'concluido']
+    : ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+  const map = {};
+  keys.forEach(k => { map[k] = []; });
   (demandas || []).forEach(d => {
     const etapa = d.etapa && map[d.etapa] ? d.etapa : (d.concluida ? 'concluido' : 'a_fazer');
     if (!map[etapa]) map[etapa] = [];
@@ -23,10 +22,24 @@ function groupByEtapa(demandas) {
   return map;
 }
 
-export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios }) {
+export default function KanbanBoard({
+  demandas,
+  setDemandas,
+  onAbrirComentarios,
+  isCoordenador = false,
+  onPriorizarDemanda = null,
+  pessoasLista = [],
+  onAtribuirResponsavel = null,
+  isDesigner = false,
+  userPessoaId = null,
+  onPegarDemanda = null,
+}) {
   const [activeId, setActiveId] = useState(null);
   const [mobileTab, setMobileTab] = useState('a_fazer');
   const isMobile = useIsMobile();
+
+  const incluirAguardando = isCoordenador && !!onPriorizarDemanda;
+  const ETAPAS_ORDEM = incluirAguardando ? ETAPAS_KANBAN : ETAPAS_EXECUCAO;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -34,7 +47,7 @@ export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios 
     })
   );
 
-  const byEtapa = groupByEtapa(demandas);
+  const byEtapa = groupByEtapa(demandas, incluirAguardando);
   const activeDemanda = activeId ? demandas.find(d => String(d.id) === String(activeId)) : null;
 
   function handleDragStart(ev) {
@@ -50,6 +63,14 @@ export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios 
     if (!ETAPAS_ORDEM.includes(novaEtapa)) return;
     const demanda = demandas.find(d => d.id === demandaId);
     if (!demanda || demanda.etapa === novaEtapa) return;
+
+    if (demanda.etapa === 'aguardando_priorizacao' && novaEtapa === 'a_fazer' && onPriorizarDemanda) {
+      onPriorizarDemanda(demanda);
+      return;
+    }
+
+    // Designer só pode arrastar demandas onde é responsável
+    if (isDesigner && demanda.responsavelId !== userPessoaId) return;
 
     demandasApi
       .atualizarEtapa(demandaId, novaEtapa)
@@ -107,6 +128,12 @@ export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios 
               onAbrirComentarios={onAbrirComentarios}
               activeId={activeId}
               fullWidth={isMobile}
+              isCoordenador={isCoordenador}
+              pessoasLista={pessoasLista}
+              onAtribuirResponsavel={onAtribuirResponsavel}
+              isDesigner={isDesigner}
+              userPessoaId={userPessoaId}
+              onPegarDemanda={onPegarDemanda}
             />
           ))}
         </div>
@@ -120,6 +147,8 @@ export default function KanbanBoard({ demandas, setDemandas, onAbrirComentarios 
               onAbrirComentarios={onAbrirComentarios}
               isDragging={false}
               isOverlay
+              isCoordenador={isCoordenador}
+              onAtribuirResponsavel={null}
             />
           </div>
         ) : null}

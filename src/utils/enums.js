@@ -11,9 +11,15 @@ export const CargaSemanal = {
   ALTA: 2,
 };
 
+/** Tipos de demanda (valores 0–4). Labels: Nova Peça, Alteração, Campanha, Ajuste Interno, Ideia. */
 export const TipoDemanda = {
+  NOVA_PECA: 0,
+  ALTERACAO: 1,
+  CAMPANHA: 2,
+  AJUSTE_INTERNO: 3,
+  IDEIA: 4,
+  // Aliases para compatibilidade
   POST: 0,
-  CAMPANHA: 1,
   LANDING: 2,
   INSTITUCIONAL: 3,
   OUTRO: 4,
@@ -46,11 +52,11 @@ export const cargaLabels = {
 };
 
 export const tipoLabels = {
-  [TipoDemanda.POST]: 'Post',
+  [TipoDemanda.NOVA_PECA]: 'Nova Peça',
+  [TipoDemanda.ALTERACAO]: 'Alteração',
   [TipoDemanda.CAMPANHA]: 'Campanha',
-  [TipoDemanda.LANDING]: 'Landing',
-  [TipoDemanda.INSTITUCIONAL]: 'Institucional',
-  [TipoDemanda.OUTRO]: 'Outro',
+  [TipoDemanda.AJUSTE_INTERNO]: 'Ajuste Interno',
+  [TipoDemanda.IDEIA]: 'Ideia',
 };
 
 export const impactoLabels = {
@@ -69,6 +75,20 @@ export const prioridadeLabels = {
   [PrioridadeDemanda.ALTA]: 'Alta',
   [PrioridadeDemanda.MEDIA]: 'Média',
   [PrioridadeDemanda.BAIXA]: 'Baixa',
+};
+
+/** Ordem das etapas no Kanban (coordenador vê aguardando; designer não). */
+export const ETAPAS_KANBAN = ['aguardando_priorizacao', 'a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+
+/** Etapas do fluxo de execução (sem aguardando) — visão designer. */
+export const ETAPAS_EXECUCAO = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+
+export const etapaLabels = {
+  aguardando_priorizacao: 'Aguardando Priorização',
+  a_fazer: 'A Fazer',
+  em_andamento: 'Em Andamento',
+  em_revisao: 'Revisão',
+  concluido: 'Concluído',
 };
 
 // ─── Helpers de emoji/cor ───────────────────────────────

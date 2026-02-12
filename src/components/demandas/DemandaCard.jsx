@@ -23,6 +23,7 @@ export default function DemandaCard({
   onEditar,
   onConcluir,
   onComentarios,
+  onPriorizar,
 }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-ds-sm hover:shadow-ds-md hover:border-primary-blue transition-all duration-200">
@@ -102,7 +103,16 @@ export default function DemandaCard({
               <option value={StatusDemanda.RISCO}>Risco</option>
             </select>
           )}
-          {isCoordenador && filtro !== 'concluidas' && (
+          {isCoordenador && filtro === 'aguardando' && onPriorizar && (
+            <button
+              type="button"
+              onClick={() => onPriorizar(demanda)}
+              className="text-xs font-medium text-amber-700 hover:text-amber-800 border border-amber-300 rounded-lg px-2 py-1.5 hover:bg-amber-50"
+            >
+              Priorizar
+            </button>
+          )}
+          {isCoordenador && filtro !== 'concluidas' && filtro !== 'aguardando' && (
             <>
               <button
                 type="button"

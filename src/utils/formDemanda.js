@@ -5,7 +5,7 @@ export function getInitialDemandaForm() {
   return {
     titulo: '',
     descricao: '',
-    tipo: TipoDemanda.POST,
+    tipo: TipoDemanda.NOVA_PECA,
     responsavelId: '',
     prazo: '',
     impacto: ImpactoNegocio.LEAD,
@@ -21,7 +21,7 @@ export function demandaToForm(demanda) {
   return {
     titulo: demanda.titulo ?? '',
     descricao: demanda.descricao ?? '',
-    tipo: demanda.tipo ?? TipoDemanda.POST,
+    tipo: demanda.tipo ?? TipoDemanda.NOVA_PECA,
     responsavelId: String(demanda.responsavelId ?? ''),
     prazo: demanda.prazo ? new Date(demanda.prazo).toISOString().slice(0, 10) : '',
     impacto: demanda.impacto ?? ImpactoNegocio.LEAD,
@@ -33,14 +33,17 @@ export function demandaToForm(demanda) {
 
 /** Converte valores do form para payload da API (criar/atualizar). */
 export function formToDemandaPayload(form) {
+  const responsavelId = form.responsavelId != null && form.responsavelId !== '';
+  const prazo = form.prazo != null && String(form.prazo).trim() !== '';
+  const prioridade = form.prioridade != null && form.prioridade !== '';
   return {
     titulo: form.titulo,
     descricao: form.descricao?.trim() || null,
     tipo: Number(form.tipo),
-    responsavelId: Number(form.responsavelId),
-    prazo: new Date(form.prazo).toISOString(),
+    responsavelId: responsavelId ? Number(form.responsavelId) : null,
+    prazo: prazo ? new Date(form.prazo).toISOString() : null,
     impacto: Number(form.impacto),
-    prioridade: Number(form.prioridade),
+    prioridade: prioridade ? Number(form.prioridade) : null,
     empreendimentoId: form.empreendimentoId ? Number(form.empreendimentoId) : null,
     link: form.link?.trim() || null,
   };

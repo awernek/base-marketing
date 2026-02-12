@@ -272,11 +272,13 @@ Desativar (soft). **Só Coordenador.** **Resposta 204.**
 
 ## Demandas  
 
-- **Coordenador:** vê todas as demandas.  
-- **Designer:** vê apenas demandas em que ele é o responsável (`responsavelId === pessoaId` do usuário).
+- **Coordenador:** vê todas as demandas; pode priorizar (aguardando → a fazer), atribuir responsável e mover qualquer demanda.  
+- **Designer:** vê **minhas** (responsavelId = meu pessoaId) + **disponíveis** (etapa `a_fazer` e sem responsável); pode criar demanda (entra em aguardando), **pegar** tarefa disponível e mover apenas as suas entre etapas.
+
+**Etapas:** `aguardando_priorizacao`, `a_fazer`, `em_andamento`, `em_revisao`, `concluido`.
 
 ### GET /api/demandas  
-Query: `?ativas=true` (só não concluídas), `?de=` e `?ate=` (intervalo de prazo, ISO 8601), `?empreendimentoId=`, `?tipo=` (TipoDemanda).
+Query: `?ativas=true`, `?etapa=` (filtrar por etapa), `?de=` e `?ate=` (prazo), `?empreendimentoId=`, `?tipo=`, `?prioridade=`, `?responsavelId=` (só coordenador).
 
 **Resposta 200:** array de:
 ```json
@@ -285,19 +287,23 @@ Query: `?ativas=true` (só não concluídas), `?de=` e `?ate=` (intervalo de pra
   "titulo": "string",
   "descricao": "string | null",
   "tipo": 0,
-  "responsavelId": 0,
+  "etapa": "aguardando_priorizacao | a_fazer | em_andamento | em_revisao | concluido",
+  "responsavelId": 0 | null,
   "responsavelNome": "string | null",
-  "prazo": "2025-02-10T00:00:00Z",
+  "prazo": "2025-02-10T00:00:00Z | null",
   "impacto": 0,
   "status": 0,
-  "prioridade": 0,
+  "prioridade": 0 | null,
   "ordem": 0 | null,
   "link": "string | null",
   "empreendimentoId": 0 | null,
   "empreendimentoNome": "string | null",
   "concluida": false,
   "criadaEm": "2025-02-10T00:00:00Z",
-  "atualizadaEm": "2025-02-10T00:00:00Z | null"
+  "atualizadaEm": "2025-02-10T00:00:00Z | null",
+  "criadaPorUsuarioId": "uuid | null",
+  "comentariosCount": 0,
+  "statusAutomatico": "normal | atencao | urgente | atrasado"
 }
 ```
 
@@ -327,75 +333,86 @@ Apenas demandas em risco. **Só Coordenador.** Mesmo formato.
 ---
 
 ### GET /api/demandas/{id}  
-Detalhe de uma demanda. Mesmo objeto da lista.
+Detalhe de uma demanda. Mesmo objeto da lista. Designer: só minhas ou disponíveis (a_fazer sem responsável).
 
-**Resposta 404:** não encontrada. **403:** designer tentando acessar demanda de outro.
+**Resposta 404:** não encontrada. **403:** designer tentando acessar demanda que não é sua nem disponível.
 
 ---
 
 ### POST /api/demandas  
-Criar demanda. **Só Coordenador.** Body:
+Criar demanda. **Coordenador ou Designer.** Nova demanda entra em `aguardando_priorizacao`. Body:
 
 ```json
 {
   "titulo": "string",
   "descricao": "string | null",
   "tipo": 0,
-  "responsavelId": 0,
-  "prazo": "2025-02-15T23:59:59Z",
+  "responsavelId": null,
+  "prazo": null,
   "impacto": 0,
-  "prioridade": 1,
+  "prioridade": null,
   "ordem": null,
   "link": "string | null",
   "empreendimentoId": null
 }
 ```
-- `prioridade`: 0 Alta, 1 Media, 2 Baixa (default 1).  
-- `ordem`, `link`, `empreendimentoId` opcionais.
+- Obrigatórios: `titulo`, `tipo`.  
+- Opcionais: descricao, prazo, prioridade, responsavelId (coordenador pode já atribuir), empreendimentoId.  
+- Coordenador pode enviar responsavelId/prazo/prioridade; designer normalmente não.
 
-**Resposta 201:** objeto Demanda completo, header Location.
+**Resposta 201:** objeto Demanda completo (etapa `aguardando_priorizacao`), header Location.
+
+---
+
+### PUT /api/demandas/{id}/priorizar  
+**Só Coordenador.** Mover demanda de `aguardando_priorizacao` → `a_fazer` e definir prioridade/responsável/prazo. Body:
+
+```json
+{
+  "prioridade": 0,
+  "responsavelId": null,
+  "prazo": "2025-02-15T23:59:59Z"
+}
+```
+- `prioridade` obrigatória (0 Alta, 1 Média, 2 Baixa).  
+- `responsavelId` e `prazo` opcionais.
+
+**Resposta 204:** sem corpo. **400:** demanda não está em aguardando_priorizacao.
+
+---
+
+### POST /api/demandas/{id}/pegar  
+**Só Designer.** Atribuir a si uma demanda em `a_fazer` sem responsável. Body vazio.
+
+**Resposta 204:** sem corpo. **400:** demanda já tem responsável ou não está em a_fazer.
 
 ---
 
 ### PUT /api/demandas/{id}  
-Atualizar demanda. Body (coordenador ou designer responsável):
+Atualizar demanda. **Coordenador:** todos os campos (titulo, descricao, tipo, responsavelId, prazo, prioridade, etc.). **Designer:** apenas `titulo` e `descricao` (e só nas demandas em que é responsável).
 
-```json
-{
-  "titulo": "string",
-  "descricao": "string | null",
-  "tipo": 0,
-  "responsavelId": 0,
-  "prazo": "2025-02-15T23:59:59Z",
-  "impacto": 0,
-  "status": 0,
-  "prioridade": 0,
-  "ordem": null,
-  "link": "string | null",
-  "empreendimentoId": null
-}
-```
+**Resposta 204:** sem corpo.
+
+---
+
+### PUT /api/demandas/{id}/etapa  
+Mover demanda entre etapas (Kanban). Body: `{ "etapa": "a_fazer" | "em_andamento" | "em_revisao" | "concluido" }`.  
+- **Coordenador:** pode mover qualquer demanda (incl. de aguardando_priorizacao → a_fazer; para priorizar use PUT /priorizar).  
+- **Designer:** só pode mover demandas em que é responsável, e apenas entre a_fazer, em_andamento, em_revisao, concluido.
 
 **Resposta 204:** sem corpo.
 
 ---
 
 ### PUT /api/demandas/{id}/status  
-Atualizar apenas o status. **Coordenador** ou **Designer responsável pela demanda.** Body:
-
-```json
-{
-  "status": 0
-}
-```
-(status: 0 OK, 1 Atencao, 2 Risco)
+Atualizar apenas o status. **Coordenador** ou **Designer responsável pela demanda.** Body: `{ "status": 0 }` (0 OK, 1 Atencao, 2 Risco).
 
 **Resposta 204:** sem corpo.
 
 ---
 
 ### GET /api/demandas/{id}/atualizacoes  
-Lista comentários/atualizações da demanda (ordenados do mais recente). Coordenador ou designer responsável.
+Lista comentários/atualizações da demanda (ordenados do mais recente). Coordenador ou designer (minhas ou disponíveis).
 
 **Resposta 200:** array de:
 ```json
@@ -413,7 +430,7 @@ Lista comentários/atualizações da demanda (ordenados do mais recente). Coorde
 ---
 
 ### POST /api/demandas/{id}/atualizacoes  
-Adicionar comentário/atualização na demanda. Coordenador ou designer responsável. Body:
+Adicionar comentário/atualização na demanda. Coordenador ou designer (minhas ou disponíveis). Body:
 
 ```json
 {

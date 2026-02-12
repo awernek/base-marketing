@@ -102,7 +102,7 @@ export default function DemandaForm({
         <label className={labelClass} htmlFor="demanda-tipo">Tipo</label>
         <select
           id="demanda-tipo"
-          value={value.tipo ?? TipoDemanda.POST}
+          value={value.tipo ?? TipoDemanda.NOVA_PECA}
           onChange={(e) => set('tipo', Number(e.target.value))}
           className={inputClass}
         >

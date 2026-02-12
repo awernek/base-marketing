@@ -26,10 +26,12 @@ export async function listar(req, res, params, user) {
   const demandaId = parseInt(req.query.demanda_id, 10);
   if (isNaN(demandaId)) return badRequest(res, 'demanda_id é obrigatório.');
 
-  const { data: demanda } = await supabase.from('demandas').select('responsavel_id').eq('id', demandaId).single();
+  const { data: demanda } = await supabase.from('demandas').select('etapa, responsavel_id').eq('id', demandaId).single();
   if (!demanda) return notFound(res, 'Demanda não encontrada.');
-  if (user.tipo === TipoUsuario.DESIGNER && demanda.responsavel_id !== user.pessoaId) {
-    return forbidden(res);
+  if (user.tipo === TipoUsuario.DESIGNER) {
+    const ehMinha = demanda.responsavel_id === user.pessoaId;
+    const ehDisponivel = demanda.etapa === 'a_fazer' && demanda.responsavel_id == null;
+    if (!ehMinha && !ehDisponivel) return forbidden(res);
   }
 
   const { data: rows, error } = await supabase
@@ -71,10 +73,12 @@ export async function criar(req, res, params, user) {
   if (isNaN(demandaId)) return badRequest(res, 'demandaId é obrigatório.');
   if (!b.texto || typeof b.texto !== 'string' || !b.texto.trim()) return badRequest(res, 'Texto é obrigatório.');
 
-  const { data: demanda } = await supabase.from('demandas').select('responsavel_id').eq('id', demandaId).single();
+  const { data: demanda } = await supabase.from('demandas').select('etapa, responsavel_id').eq('id', demandaId).single();
   if (!demanda) return notFound(res, 'Demanda não encontrada.');
-  if (user.tipo === TipoUsuario.DESIGNER && demanda.responsavel_id !== user.pessoaId) {
-    return forbidden(res);
+  if (user.tipo === TipoUsuario.DESIGNER) {
+    const ehMinha = demanda.responsavel_id === user.pessoaId;
+    const ehDisponivel = demanda.etapa === 'a_fazer' && demanda.responsavel_id == null;
+    if (!ehMinha && !ehDisponivel) return forbidden(res);
   }
 
   const { data, error } = await supabase

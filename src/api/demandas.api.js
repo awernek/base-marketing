@@ -4,6 +4,7 @@ export const demandasApi = {
   listar(params = {}) {
     const sp = new URLSearchParams();
     if (params.ativas === true) sp.set('ativas', 'true');
+    if (params.etapa != null && params.etapa !== '') sp.set('etapa', params.etapa);
     if (params.de) sp.set('de', params.de);
     if (params.ate) sp.set('ate', params.ate);
     if (params.empreendimentoId != null) sp.set('empreendimentoId', params.empreendimentoId);
@@ -12,6 +13,19 @@ export const demandasApi = {
     if (params.responsavelId != null && params.responsavelId !== '') sp.set('responsavelId', params.responsavelId);
     const q = sp.toString();
     return request(`/api/demandas${q ? `?${q}` : ''}`);
+  },
+
+  priorizar(id, data) {
+    return request(`/api/demandas/${id}/priorizar`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  pegar(id) {
+    return request(`/api/demandas/${id}/pegar`, {
+      method: 'POST',
+    });
   },
 
   listarAtivas() {

@@ -3,7 +3,11 @@
  * Lógica pura, sem dependência de HTTP ou Supabase.
  */
 
-export const ETAPAS = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+/** Etapas do Kanban (fluxo de execução). Inclui aguardando_priorizacao para coordenador. */
+export const ETAPAS = ['aguardando_priorizacao', 'a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
+
+/** Etapas visíveis no quadro de execução (sem aguardando) — usado pelo designer. */
+export const ETAPAS_EXECUCAO = ['a_fazer', 'em_andamento', 'em_revisao', 'concluido'];
 
 /**
  * Status automático por prazo: atrasado, urgente, atencao, normal.
@@ -31,12 +35,12 @@ export function fmt(d, comentariosCount = 0) {
     titulo: d.titulo,
     descricao: d.descricao,
     tipo: d.tipo,
-    responsavelId: d.responsavel_id,
+    responsavelId: d.responsavel_id ?? null,
     responsavelNome: d.pessoas?.nome || null,
-    prazo: d.prazo,
+    prazo: d.prazo ?? null,
     impacto: d.impacto,
     status: d.status,
-    prioridade: d.prioridade,
+    prioridade: d.prioridade ?? null,
     etapa,
     ordem: d.ordem,
     link: d.link,
@@ -45,6 +49,7 @@ export function fmt(d, comentariosCount = 0) {
     concluida: d.concluida,
     criadaEm: d.criada_em,
     atualizadaEm: d.atualizada_em,
+    criadaPorUsuarioId: d.criada_por_usuario_id ?? null,
     comentariosCount,
     statusAutomatico: statusAutomatico(d.prazo, d.concluida),
   };

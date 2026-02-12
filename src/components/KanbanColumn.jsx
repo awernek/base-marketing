@@ -2,16 +2,12 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import PrioridadeBadge from './shared/PrioridadeBadge';
 import Avatar from './shared/Avatar';
 import EmptyState from './shared/EmptyState';
-import { tipoLabels } from '../utils/enums';
+import { tipoLabels, etapaLabels } from '../utils/enums';
 
-const ETAPA_TITULOS = {
-  a_fazer: 'Backlog',
-  em_andamento: 'Em Andamento',
-  em_revisao: 'Revisão',
-  concluido: 'Concluído',
-};
+const ETAPA_TITULOS = etapaLabels;
 
 const ETAPA_HEADER_CLASS = {
+  aguardando_priorizacao: { bg: 'bg-amber-50', text: 'text-amber-800', badge: 'bg-amber-200 text-amber-800' },
   a_fazer: { bg: 'bg-gray-100', text: 'text-gray-700', badge: 'bg-gray-200 text-gray-700' },
   em_andamento: { bg: 'bg-primary-blue-light', text: 'text-primary-blue', badge: 'bg-primary-blue/20 text-primary-blue' },
   em_revisao: { bg: 'bg-purple-100', text: 'text-purple-700', badge: 'bg-purple-200 text-purple-700' },
@@ -29,8 +25,9 @@ const TIPO_BADGE_CLASS = {
 /**
  * Card de demanda no Kanban: grip, prioridade, avatar, título, tipo, footer, comentários.
  * Pode ser usado dentro de useDraggable (no column) ou estático (no DragOverlay).
+ * isDisponivel + onPegar: designer vê card "disponível" (A Fazer sem responsável) com botão Pegar.
  */
-export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay }) {
+export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar }) {
   const tipoClass = TIPO_BADGE_CLASS[demanda.tipo] ?? TIPO_BADGE_CLASS[4];
   const tipoLabel = tipoLabels[demanda.tipo] ?? 'Outro';
 
@@ -39,7 +36,8 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay 
     transition-all duration-200
     ${isOverlay ? 'rotate-3 scale-105 shadow-ds-xl cursor-grabbing' : ''}
     ${!isOverlay && isDragging ? 'opacity-50 scale-95' : ''}
-    ${!isOverlay && !isDragging ? 'hover:shadow-ds-md hover:border-primary-blue cursor-grab active:cursor-grabbing' : ''}
+    ${!isOverlay && !isDragging && !isDisponivel ? 'hover:shadow-ds-md hover:border-primary-blue cursor-grab active:cursor-grabbing' : ''}
+    ${!isOverlay && !isDragging && isDisponivel ? 'hover:shadow-ds-md hover:border-primary-blue' : ''}
   `.trim();
 
   return (
@@ -76,8 +74,8 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay 
         </span>
       </div>
 
-      {demanda.comentariosCount > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+      <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap items-center gap-2">
+        {demanda.comentariosCount > 0 && (
           <button
             type="button"
             onClick={(e) => {
@@ -89,32 +87,60 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay 
             <span aria-hidden="true">💬</span> {demanda.comentariosCount}{' '}
             {demanda.comentariosCount === 1 ? 'comentário' : 'comentários'}
           </button>
-        </div>
-      )}
+        )}
+        {isDisponivel && onPegar && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPegar(demanda);
+            }}
+            className="text-xs font-medium text-primary-blue hover:text-primary-blue-dark bg-primary-blue/10 hover:bg-primary-blue/20 px-2 py-1 rounded"
+          >
+            Pegar
+          </button>
+        )}
+        {isCoordenador && onAtribuirResponsavel && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAtribuirResponsavel(demanda);
+            }}
+            className="text-xs text-gray-500 hover:text-primary-blue"
+          >
+            Atribuir
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-/** Wrapper que torna o card arrastável (useDraggable). */
-function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging }) {
+/** Wrapper que torna o card arrastável (useDraggable). Designer: só arrastável quando é minha demanda. */
+function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: String(demanda.id),
     data: { demanda, etapaAtual: demanda.etapa },
   });
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes}>
+    <div ref={setNodeRef} {...(isDisponivel ? {} : { ...listeners, ...attributes })}>
       <KanbanCard
         demanda={demanda}
         onAbrirComentarios={onAbrirComentarios}
         isDragging={isDragging}
         isOverlay={false}
+        isCoordenador={isCoordenador}
+        onAtribuirResponsavel={onAtribuirResponsavel}
+        isDisponivel={isDisponivel}
+        onPegar={onPegar}
       />
     </div>
   );
 }
 
-export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth }) {
+export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth, isCoordenador, pessoasLista, onAtribuirResponsavel, isDesigner, userPessoaId, onPegarDemanda }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const titulo = ETAPA_TITULOS[etapa] ?? etapa;
   const headerClass = ETAPA_HEADER_CLASS[etapa] ?? ETAPA_HEADER_CLASS.a_fazer;
@@ -148,14 +174,21 @@ export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, acti
             description="Arraste demandas para esta coluna ou crie uma nova."
           />
         ) : (
-          demandas.map((demanda) => (
-            <KanbanCardDraggable
-              key={demanda.id}
-              demanda={demanda}
-              onAbrirComentarios={onAbrirComentarios}
-              isDragging={activeId === String(demanda.id)}
-            />
-          ))
+          demandas.map((demanda) => {
+            const isDisponivel = isDesigner && etapa === 'a_fazer' && (demanda.responsavelId == null || demanda.responsavelId === '');
+            return (
+              <KanbanCardDraggable
+                key={demanda.id}
+                demanda={demanda}
+                onAbrirComentarios={onAbrirComentarios}
+                isDragging={activeId === String(demanda.id)}
+                isCoordenador={isCoordenador}
+                onAtribuirResponsavel={onAtribuirResponsavel}
+                isDisponivel={isDisponivel}
+                onPegar={onPegarDemanda}
+              />
+            );
+          })
         )}
       </div>
     </div>

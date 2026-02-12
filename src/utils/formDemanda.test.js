@@ -6,7 +6,7 @@ describe('formDemanda', () => {
   it('getInitialDemandaForm retorna estado inicial', () => {
     const initial = getInitialDemandaForm();
     expect(initial.titulo).toBe('');
-    expect(initial.tipo).toBe(TipoDemanda.POST);
+    expect(initial.tipo).toBe(TipoDemanda.NOVA_PECA);
     expect(initial.impacto).toBe(ImpactoNegocio.LEAD);
     expect(initial.prioridade).toBe(PrioridadeDemanda.MEDIA);
     expect(initial.responsavelId).toBe('');

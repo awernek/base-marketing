@@ -386,6 +386,7 @@ function Dashboard() {
   const totalDemandasAtivas = overview?.totalDemandasAtivas ?? overview?.demandasAtivas ?? demandas.length;
   const totalConcluidas = overview?.demandasConcluidas ?? 0;
   const totalEmRisco = overview?.emRisco ?? countDemandasEmRisco;
+  const totalAguardandoPriorizacao = overview?.demandasAguardandoPriorizacao ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -397,7 +398,16 @@ function Dashboard() {
         </div>
 
         {/* Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Link to="/demandas?filtro=aguardando">
+            <MetricCard
+              icon="⏳"
+              titulo="Aguardando priorização"
+              valor={totalAguardandoPriorizacao}
+              mudanca={totalAguardandoPriorizacao > 0 ? 'priorizar' : 'nenhuma'}
+              tipo={totalAguardandoPriorizacao > 0 ? 'negativo' : 'neutro'}
+            />
+          </Link>
           <MetricCard
             icon="📋"
             titulo="Demandas Ativas"

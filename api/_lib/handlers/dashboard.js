@@ -11,11 +11,13 @@ export async function overview(req, res, params, user) {
     { count: totalEmpreendimentos },
     { count: demandasAtivas },
     { count: demandasConcluidas },
+    { count: demandasAguardandoPriorizacao },
   ] = await Promise.all([
     supabase.from('pessoas').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('empreendimentos').select('*', { count: 'exact', head: true }).eq('ativo', true),
     supabase.from('demandas').select('*', { count: 'exact', head: true }).eq('concluida', false),
     supabase.from('demandas').select('*', { count: 'exact', head: true }).eq('concluida', true),
+    supabase.from('demandas').select('*', { count: 'exact', head: true }).eq('etapa', 'aguardando_priorizacao'),
   ]);
 
   const agora = new Date();
@@ -35,6 +37,7 @@ export async function overview(req, res, params, user) {
     totalEmpreendimentos: totalEmpreendimentos || 0,
     demandasAtivas: demandasAtivas || 0,
     demandasConcluidas: demandasConcluidas || 0,
+    demandasAguardandoPriorizacao: demandasAguardandoPriorizacao || 0,
     proximosPrazos: proximosPrazos || 0,
     emRisco: emRisco || 0,
     cargaEquipe: cargas || [],

@@ -12,6 +12,7 @@ export default function DemandasList({
   onEditar,
   onConcluir,
   onComentarios,
+  onPriorizar,
   emptyActionLabel,
   onEmptyAction,
 }) {
@@ -50,6 +51,7 @@ export default function DemandasList({
           onEditar={onEditar}
           onConcluir={onConcluir}
           onComentarios={onComentarios}
+          onPriorizar={onPriorizar}
         />
       ))}
     </div>
