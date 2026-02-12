@@ -256,9 +256,16 @@ export default function DemandasPage() {
         <div className={isKanbanView ? 'shrink-0 bg-white border-b border-gray-200 py-4' : ''}>
           <div className={!isKanbanView ? '' : 'w-full'}>
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {isDesigner ? 'Minhas demandas' : 'Demandas'}
-              </h1>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  {isDesigner ? 'Minhas demandas' : 'Demandas'}
+                </h1>
+                {filtro === 'concluidas' && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {isDesigner ? 'Suas demandas finalizadas.' : 'Todas as demandas finalizadas.'}
+                  </p>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 items-center">
                 {isCoordenador ? (
                   <>

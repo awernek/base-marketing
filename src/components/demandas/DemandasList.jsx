@@ -17,21 +17,29 @@ export default function DemandasList({
   onEmptyAction,
 }) {
   const demandasOrdenadas = [...demandas].sort((a, b) => {
+    if (filtro === 'concluidas') {
+      const da = a.atualizadaEm || a.criadaEm || '';
+      const db = b.atualizadaEm || b.criadaEm || '';
+      return new Date(db) - new Date(da);
+    }
     const prioridadeOrder = { [PrioridadeDemanda.ALTA]: 0, [PrioridadeDemanda.MEDIA]: 1, [PrioridadeDemanda.BAIXA]: 2 };
     const pa = prioridadeOrder[a.prioridade] ?? 3, pb = prioridadeOrder[b.prioridade] ?? 3;
     if (pa !== pb) return pa - pb;
-    return new Date(a.prazo) - new Date(b.prazo);
+    const pazoA = a.prazo ? new Date(a.prazo).getTime() : 0;
+    const pazoB = b.prazo ? new Date(b.prazo).getTime() : 0;
+    return pazoB - pazoA;
   });
 
   if (demandasOrdenadas.length === 0) {
+    const isConcluidas = filtro === 'concluidas';
     return (
       <div className="bg-white rounded-xl border border-gray-200 shadow-ds-sm overflow-hidden">
         <EmptyState
-          icon="📋"
-          title="Nenhuma demanda nesta lista"
-          description="Crie uma nova demanda ou ajuste os filtros."
-          actionLabel={emptyActionLabel}
-          onAction={onEmptyAction}
+          icon={isConcluidas ? '✅' : '📋'}
+          title={isConcluidas ? 'Nenhuma demanda concluída' : 'Nenhuma demanda nesta lista'}
+          description={isConcluidas ? 'As demandas concluídas aparecerão aqui.' : 'Crie uma nova demanda ou ajuste os filtros.'}
+          actionLabel={isConcluidas ? undefined : emptyActionLabel}
+          onAction={isConcluidas ? undefined : onEmptyAction}
         />
       </div>
     );
