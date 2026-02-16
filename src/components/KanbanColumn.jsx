@@ -2,7 +2,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import PrioridadeBadge from './shared/PrioridadeBadge';
 import Avatar from './shared/Avatar';
 import EmptyState from './shared/EmptyState';
-import { tipoLabels, etapaLabels } from '../utils/enums';
+import { tipoLabels, etapaLabels, formatDemandaId } from '../utils/enums';
 
 const ETAPA_TITULOS = etapaLabels;
 
@@ -27,8 +27,9 @@ const TIPO_BADGE_CLASS = {
  * Pode ser usado dentro de useDraggable (no column) ou estático (no DragOverlay).
  * isDisponivel + onPegar: designer vê card "disponível" (A Fazer sem responsável) com botão Pegar.
  * onEditar + podeEditar: abre modal de edição (formato compacto no card).
+ * onAbrirQuickView: ao clicar no card (área não botão), abre drawer de visualização rápida.
  */
-export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar }) {
+export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar, onAbrirQuickView }) {
   const tipoClass = TIPO_BADGE_CLASS[demanda.tipo] ?? TIPO_BADGE_CLASS[4];
   const tipoLabel = tipoLabels[demanda.tipo] ?? 'Outro';
 
@@ -41,37 +42,55 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay,
     ${!isOverlay && !isDragging && isDisponivel ? 'hover:shadow-ds-md hover:border-primary-blue' : ''}
   `.trim();
 
+  const handleCardClick = (e) => {
+    if (onAbrirQuickView && !e.target.closest('button')) onAbrirQuickView(demanda);
+  };
+
   return (
-    <div className={cardClass} data-demanda-id={demanda.id}>
+    <div
+      className={cardClass}
+      data-demanda-id={demanda.id}
+      onClick={onAbrirQuickView && !isOverlay ? handleCardClick : undefined}
+      role={onAbrirQuickView && !isOverlay ? 'button' : undefined}
+      tabIndex={onAbrirQuickView && !isOverlay ? 0 : undefined}
+      aria-label={onAbrirQuickView && !isOverlay ? `Ver detalhes da demanda ${demanda.titulo}` : undefined}
+      onKeyDown={onAbrirQuickView && !isOverlay ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrirQuickView(demanda); } } : undefined}
+    >
       {/* Grip handle */}
       <div className="flex items-center justify-center mb-2 -mt-1" aria-hidden="true">
         <div className="w-8 h-1 bg-gray-300 rounded-full" />
       </div>
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-mono text-gray-500">{formatDemandaId(demanda.id)}</span>
         <PrioridadeBadge prioridade={demanda.prioridade} />
-        <Avatar user={demanda.responsavelNome || demanda.responsavel} size="sm" />
       </div>
 
-      <h4 className="font-semibold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug">
+      <h4 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 leading-snug">
         {demanda.titulo}
       </h4>
+      {demanda.descricao && (
+        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{demanda.descricao}</p>
+      )}
 
-      <div className="flex flex-wrap gap-2 mb-3">
-        <span className={`px-2 py-1 rounded-md text-xs font-medium ${tipoClass}`}>
+      <div className="flex items-center justify-between mb-2">
+        <Avatar user={demanda.responsavelNome || demanda.responsavel} size="sm" />
+        <span className="text-xs text-gray-500">
+          {demanda.prazo
+            ? new Date(demanda.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+            : '—'}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-2">
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${tipoClass}`}>
           {tipoLabel}
         </span>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-gray-600 pt-3 border-t border-gray-100">
-        <span className="flex items-center gap-1 truncate">
+      <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+        <span className="truncate flex-1 min-w-0">
           <span aria-hidden="true">🏢</span> {demanda.empreendimentoNome || '—'}
-        </span>
-        <span className="flex items-center gap-1 shrink-0">
-          <span aria-hidden="true">📅</span>{' '}
-          {demanda.prazo
-            ? new Date(demanda.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-            : '—'}
         </span>
       </div>
 
@@ -111,7 +130,7 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay,
             }}
             className="text-xs font-medium text-primary-blue hover:text-primary-blue-dark bg-primary-blue/10 hover:bg-primary-blue/20 px-2 py-1 rounded"
           >
-            Pegar
+            Assumir tarefa
           </button>
         )}
         {isCoordenador && onAtribuirResponsavel && (
@@ -132,7 +151,7 @@ export function KanbanCard({ demanda, onAbrirComentarios, isDragging, isOverlay,
 }
 
 /** Wrapper que torna o card arrastável (useDraggable). Designer: só arrastável quando é minha demanda. */
-function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar }) {
+function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoordenador, onAtribuirResponsavel, isDisponivel, onPegar, onEditar, podeEditar, onAbrirQuickView }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: String(demanda.id),
     data: { demanda, etapaAtual: demanda.etapa },
@@ -151,12 +170,13 @@ function KanbanCardDraggable({ demanda, onAbrirComentarios, isDragging, isCoorde
         onPegar={onPegar}
         onEditar={onEditar}
         podeEditar={podeEditar}
+        onAbrirQuickView={onAbrirQuickView}
       />
     </div>
   );
 }
 
-export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth, isCoordenador, pessoasLista, onAtribuirResponsavel, isDesigner, userPessoaId, onPegarDemanda, onEditarDemanda }) {
+export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, activeId, fullWidth, isCoordenador, pessoasLista, onAtribuirResponsavel, isDesigner, userPessoaId, onPegarDemanda, onEditarDemanda, onAbrirQuickView }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const titulo = ETAPA_TITULOS[etapa] ?? etapa;
   const headerClass = ETAPA_HEADER_CLASS[etapa] ?? ETAPA_HEADER_CLASS.a_fazer;
@@ -205,6 +225,7 @@ export default function KanbanColumn({ etapa, demandas, onAbrirComentarios, acti
                 onPegar={onPegarDemanda}
                 onEditar={onEditarDemanda}
                 podeEditar={podeEditar}
+                onAbrirQuickView={onAbrirQuickView}
               />
             );
           })

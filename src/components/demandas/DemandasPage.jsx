@@ -17,7 +17,9 @@ import DemandaForm from '../shared/DemandaForm';
 import ConfirmDialog from '../shared/ConfirmDialog';
 import { getInitialDemandaForm, demandaToForm, formToDemandaPayload } from '../../utils/formDemanda';
 import DemandasList from './DemandasList';
-import { PrioridadeDemanda, prioridadeLabels } from '../../utils/enums';
+import DemandaQuickView from './DemandaQuickView';
+import Drawer from '../shared/Drawer';
+import { PrioridadeDemanda, prioridadeLabels, formatDemandaId } from '../../utils/enums';
 
 const STORAGE_KEY_VIEW = 'demandas-vista';
 
@@ -67,6 +69,7 @@ export default function DemandasPage() {
   const [salvandoAtribuir, setSalvandoAtribuir] = useState(false);
   const [erroCriar, setErroCriar] = useState(null);
   const [erroEditar, setErroEditar] = useState(null);
+  const [quickViewDemanda, setQuickViewDemanda] = useState(null);
 
   const isMobile = useIsMobile();
 
@@ -380,6 +383,7 @@ export default function DemandasPage() {
               onPegarDemanda={isDesigner ? handlePegarDemanda : null}
               onEditarDemanda={handleAbrirEditarDemanda}
               onRefetchDemandas={refreshDemandas}
+              onAbrirQuickView={setQuickViewDemanda}
             />
           ) : (
             <DemandasList
@@ -393,6 +397,7 @@ export default function DemandasPage() {
               onConcluir={setConcluirDemanda}
               onComentarios={demanda => setDemandaComentarios(demanda)}
               onPriorizar={isCoordenador ? handleAbrirPriorizar : undefined}
+              onAbrirQuickView={setQuickViewDemanda}
               emptyActionLabel={isCoordenador || isDesigner ? '+ Nova demanda' : undefined}
               onEmptyAction={isCoordenador || isDesigner ? () => setShowNovaDemanda(true) : undefined}
             />
@@ -407,7 +412,7 @@ export default function DemandasPage() {
       </Modal>
 
       <Modal open={showNovaDemanda} onClose={() => { setShowNovaDemanda(false); setErroCriar(null); }} title="Nova Demanda">
-        <DemandaForm value={novaDemanda} onChange={setNovaDemanda} onSubmit={handleCriarDemanda} onCancel={() => { setShowNovaDemanda(false); setErroCriar(null); }} submitting={criandoDemanda} submitLabel="Criar" pessoasLista={pessoasLista} empreendimentosLista={empreendimentosLista} error={erroCriar} onDismissError={() => setErroCriar(null)} />
+        <DemandaForm value={novaDemanda} onChange={setNovaDemanda} onSubmit={handleCriarDemanda} onCancel={() => { setShowNovaDemanda(false); setErroCriar(null); }} submitting={criandoDemanda} submitLabel="Criar" pessoasLista={pessoasLista} empreendimentosLista={empreendimentosLista} error={erroCriar} onDismissError={() => setErroCriar(null)} simplified />
       </Modal>
 
       <Modal open={!!demandaEmEdicao} onClose={() => { setDemandaEmEdicao(null); setErroEditar(null); }} title="Editar Demanda">
@@ -415,6 +420,23 @@ export default function DemandasPage() {
       </Modal>
 
       <ConfirmDialog open={!!concluirDemanda} onClose={() => setConcluirDemanda(null)} onConfirm={handleConfirmarConcluir} title="Concluir demanda" message="Marcar esta demanda como concluída?" confirmLabel="Concluir" cancelLabel="Cancelar" variant="danger" />
+
+      <Drawer
+        open={!!quickViewDemanda}
+        onClose={() => setQuickViewDemanda(null)}
+        title={quickViewDemanda ? `${formatDemandaId(quickViewDemanda.id)} ${quickViewDemanda.titulo}` : ''}
+        width="max-w-lg"
+      >
+        {quickViewDemanda && (
+          <DemandaQuickView
+            demanda={quickViewDemanda}
+            onClose={() => setQuickViewDemanda(null)}
+            onEditar={handleAbrirEditarDemanda}
+            podeEditar={isCoordenador || (isDesigner && Number(quickViewDemanda.responsavelId) === Number(user?.pessoaId))}
+            onComentarioAdicionado={() => refreshDemandas({ silent: true })}
+          />
+        )}
+      </Drawer>
 
       {/* Modal Priorizar (arrastar de Aguardando → A Fazer) */}
       <Modal open={!!priorizarDemanda} onClose={() => setPriorizarDemanda(null)} title="Priorizar demanda" maxWidth="max-w-md">

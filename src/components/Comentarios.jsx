@@ -140,7 +140,7 @@ export default function Comentarios({ demandaId, onComentarioAdicionado }) {
     <div className="flex flex-col">
       <div ref={listRef} className="space-y-1 mb-6 max-h-[50vh] overflow-y-auto pr-2">
         {comentarios.length === 0 ? (
-          <p className="text-sm text-gray-500 py-4">Nenhum comentário ainda.</p>
+          <p className="text-sm text-gray-500 py-4">Nenhum comentário ainda. Seja o primeiro a comentar.</p>
         ) : (
           comentarios.map((c) => (
             <ComentarioItem

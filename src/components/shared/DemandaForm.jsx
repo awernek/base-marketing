@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Button from './Button';
 import {
   prioridadeLabels,
@@ -25,7 +26,10 @@ export default function DemandaForm({
   empreendimentosLista = [],
   error = null,
   onDismissError,
+  simplified = false,
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(!simplified);
+
   const set = (field, val) => {
     if (typeof onChange === 'function') {
       if (typeof val === 'object' && val !== null && !(val instanceof Date)) {
@@ -76,7 +80,7 @@ export default function DemandaForm({
         />
       </div>
       <div>
-        <label className={labelClass} htmlFor="demanda-descricao">Briefing / descrição (opcional)</label>
+        <label className={labelClass} htmlFor="demanda-descricao">Briefing / descrição</label>
         <textarea
           id="demanda-descricao"
           value={value.descricao ?? ''}
@@ -85,6 +89,19 @@ export default function DemandaForm({
           placeholder="Contexto, referências, instruções..."
         />
       </div>
+
+      {simplified && (
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(a => !a)}
+          className="text-sm font-medium text-primary-blue hover:text-primary-blue-dark"
+        >
+          {showAdvanced ? '− Ocultar campos opcionais' : '+ Campos opcionais (tipo, responsável, prazo…)'}
+        </button>
+      )}
+
+      {(showAdvanced || !simplified) && (
+        <>
       <div>
         <label className={labelClass} htmlFor="demanda-prioridade">Prioridade</label>
         <select
@@ -153,11 +170,10 @@ export default function DemandaForm({
         </select>
       </div>
       <div>
-        <label className={labelClass} htmlFor="demanda-prazo">Prazo</label>
+        <label className={labelClass} htmlFor="demanda-prazo">Prazo (opcional)</label>
         <input
           id="demanda-prazo"
           type="date"
-          required
           value={value.prazo ?? ''}
           onChange={(e) => set('prazo', e.target.value)}
           className={inputClass}
@@ -181,6 +197,9 @@ export default function DemandaForm({
           ))}
         </div>
       </div>
+        </>
+      )}
+
       <div className="flex gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
           Cancelar

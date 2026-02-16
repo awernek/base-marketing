@@ -13,6 +13,7 @@ export default function DemandasList({
   onConcluir,
   onComentarios,
   onPriorizar,
+  onAbrirQuickView,
   emptyActionLabel,
   onEmptyAction,
 }) {
@@ -60,6 +61,7 @@ export default function DemandasList({
           onConcluir={onConcluir}
           onComentarios={onComentarios}
           onPriorizar={onPriorizar}
+          onAbrirQuickView={onAbrirQuickView}
         />
       ))}
     </div>

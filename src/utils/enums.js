@@ -168,6 +168,12 @@ export function getPrioridadeBadgeClass(prioridade) {
   }
 }
 
+/** Formato de ID da demanda para exibição: #000123 */
+export function formatDemandaId(id) {
+  if (id == null) return '—';
+  return '#' + String(id).padStart(6, '0');
+}
+
 /** Badge de status automático por prazo (Sprint 4): atrasado, urgente, atencao, normal */
 export function getStatusAutomaticoBadge(statusAutomatico) {
   switch (statusAutomatico) {

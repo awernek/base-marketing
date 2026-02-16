@@ -35,6 +35,7 @@ export default function KanbanBoard({
   onPegarDemanda = null,
   onEditarDemanda = null,
   onRefetchDemandas = null,
+  onAbrirQuickView = null,
 }) {
   const [activeId, setActiveId] = useState(null);
   const [mobileTab, setMobileTab] = useState('a_fazer');
@@ -142,6 +143,7 @@ export default function KanbanBoard({
               userPessoaId={userPessoaId}
               onPegarDemanda={onPegarDemanda}
               onEditarDemanda={onEditarDemanda}
+              onAbrirQuickView={onAbrirQuickView}
             />
           ))}
         </div>

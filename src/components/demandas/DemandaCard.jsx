@@ -7,6 +7,7 @@ import {
   tipoLabels,
   impactoLabels,
   StatusDemanda,
+  formatDemandaId,
 } from '../../utils/enums';
 
 /**
@@ -24,16 +25,31 @@ export default function DemandaCard({
   onConcluir,
   onComentarios,
   onPriorizar,
+  onAbrirQuickView,
 }) {
+  const handleCardClick = (e) => {
+    if (onAbrirQuickView && !e.target.closest('button') && !e.target.closest('select')) {
+      onAbrirQuickView(demanda);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-ds-sm hover:shadow-ds-md hover:border-primary-blue transition-all duration-200">
-      {/* Header: prioridade + avatar */}
-      <div className="flex items-center justify-between mb-3">
+    <div
+      className={`bg-white rounded-lg border border-gray-200 p-4 shadow-ds-sm hover:shadow-ds-md hover:border-primary-blue transition-all duration-200 ${onAbrirQuickView ? 'cursor-pointer' : ''}`}
+      onClick={onAbrirQuickView ? handleCardClick : undefined}
+      role={onAbrirQuickView ? 'button' : undefined}
+      tabIndex={onAbrirQuickView ? 0 : undefined}
+      aria-label={onAbrirQuickView ? `Ver detalhes da demanda ${demanda.titulo}` : undefined}
+      onKeyDown={onAbrirQuickView ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrirQuickView(demanda); } } : undefined}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-mono text-gray-500">{formatDemandaId(demanda.id)}</span>
         <PrioridadeBadge prioridade={demanda.prioridade} />
+      </div>
+      <div className="flex justify-end mb-2">
         <Avatar user={demanda.responsavelNome || demanda.responsavel} size="sm" />
       </div>
 
-      {/* Título */}
       <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{demanda.titulo}</h3>
       {demanda.descricao && (
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{demanda.descricao}</p>
