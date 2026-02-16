@@ -484,7 +484,7 @@ export default function DemandasPage() {
         open={!!quickViewDemanda}
         onClose={handleCloseQuickView}
         title={quickViewDemanda ? `${formatDemandaId(quickViewDemanda.id)} ${quickViewDemanda.titulo}` : ''}
-        width="max-w-lg"
+        width="max-w-[50vw]"
       >
         {quickViewDemanda && (
           <DemandaQuickView
