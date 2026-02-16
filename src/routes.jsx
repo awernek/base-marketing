@@ -29,6 +29,7 @@ export function AppRoutes() {
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         )}
         <Route path="/demandas" element={<ProtectedRoute><Demandas /></ProtectedRoute>} />
+        <Route path="/demandas/:id" element={<ProtectedRoute><Demandas /></ProtectedRoute>} />
         <Route path="/calendario" element={<ProtectedRoute><Calendario /></ProtectedRoute>} />
         {isCoordenador && (
           <Route path="/empreendimentos" element={<ProtectedRoute><Empreendimentos /></ProtectedRoute>} />

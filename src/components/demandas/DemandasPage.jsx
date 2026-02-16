@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { demandasApi } from '../../services/api';
 import { useDemandas } from '../../hooks/useDemandas';
@@ -41,10 +41,13 @@ export default function DemandasPage() {
   const { user, isCoordenador, isDesigner } = useAuth();
   const { addToast } = useToast();
   const [searchParams] = useSearchParams();
+  const { id: idFromRoute } = useParams();
+  const navigate = useNavigate();
   const filtroInicial = searchParams.get('filtro') || 'ativas';
   const empreendimentoFiltro = searchParams.get('empreendimentoId') || '';
 
   const [filtro, setFiltro] = useState(filtroInicial);
+  const [buscaPorId, setBuscaPorId] = useState('');
   const [filtroEmpreendimentoId, setFiltroEmpreendimentoId] = useState(empreendimentoFiltro);
   const [filtroPrioridade, setFiltroPrioridade] = useState('');
   const [filtroResponsavelId, setFiltroResponsavelId] = useState('');
@@ -83,6 +86,49 @@ export default function DemandasPage() {
     isCoordenador,
     user,
   });
+
+  const handleCloseQuickView = useCallback(() => {
+    if (idFromRoute) navigate('/demandas', { replace: true });
+    setQuickViewDemanda(null);
+  }, [idFromRoute, navigate]);
+
+  useEffect(() => {
+    if (!idFromRoute) return;
+    const numId = parseInt(idFromRoute, 10);
+    if (isNaN(numId)) return;
+    const found = demandas.find((d) => d.id === numId);
+    if (found) setQuickViewDemanda(found);
+    else {
+      demandasApi
+        .obter(numId)
+        .then((d) => setQuickViewDemanda(d))
+        .catch(() => addToast('error', 'Demanda não encontrada.'));
+    }
+  }, [idFromRoute, demandas, addToast]);
+
+  function handleBuscaPorId(e) {
+    e?.preventDefault?.();
+    const raw = buscaPorId.trim().replace(/^#/, '');
+    if (!raw) return;
+    const numId = parseInt(raw, 10);
+    if (isNaN(numId)) {
+      addToast('error', 'Informe um número de ID válido (ex.: 42 ou #42).');
+      return;
+    }
+    const found = demandas.find((d) => d.id === numId);
+    if (found) {
+      setQuickViewDemanda(found);
+      setBuscaPorId('');
+    } else {
+      demandasApi
+        .obter(numId)
+        .then((d) => {
+          setQuickViewDemanda(d);
+          setBuscaPorId('');
+        })
+        .catch(() => addToast('error', 'Demanda não encontrada.'));
+    }
+  }
 
   const refetchRef = useRef(refetchDemandas);
   refetchRef.current = refetchDemandas;
@@ -273,7 +319,7 @@ export default function DemandasPage() {
         <div className={isKanbanView ? 'shrink-0 bg-white border-b border-gray-200 py-4' : ''}>
           <div className={!isKanbanView ? '' : 'w-full'}>
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div>
+              <div className="min-w-0 flex-1">
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {isDesigner ? 'Minhas demandas' : 'Demandas'}
                 </h1>
@@ -282,6 +328,19 @@ export default function DemandasPage() {
                     {isDesigner ? 'Suas demandas finalizadas.' : 'Todas as demandas finalizadas.'}
                   </p>
                 )}
+                <form onSubmit={handleBuscaPorId} className="mt-2 flex gap-2 max-w-xs">
+                  <input
+                    type="text"
+                    value={buscaPorId}
+                    onChange={(e) => setBuscaPorId(e.target.value)}
+                    placeholder="Buscar por ID (#42)"
+                    className="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
+                    aria-label="Buscar demanda por ID"
+                  />
+                  <button type="submit" className="shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Buscar
+                  </button>
+                </form>
               </div>
               <div className="flex flex-wrap gap-2 items-center">
                 {isCoordenador ? (
@@ -423,14 +482,14 @@ export default function DemandasPage() {
 
       <Drawer
         open={!!quickViewDemanda}
-        onClose={() => setQuickViewDemanda(null)}
+        onClose={handleCloseQuickView}
         title={quickViewDemanda ? `${formatDemandaId(quickViewDemanda.id)} ${quickViewDemanda.titulo}` : ''}
         width="max-w-lg"
       >
         {quickViewDemanda && (
           <DemandaQuickView
             demanda={quickViewDemanda}
-            onClose={() => setQuickViewDemanda(null)}
+            onClose={handleCloseQuickView}
             onEditar={handleAbrirEditarDemanda}
             podeEditar={isCoordenador || (isDesigner && Number(quickViewDemanda.responsavelId) === Number(user?.pessoaId))}
             onComentarioAdicionado={() => refreshDemandas({ silent: true })}

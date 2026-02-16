@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from './Button';
+
+const STORAGE_KEY_ADVANCED = 'demanda-form-show-advanced';
 import {
   prioridadeLabels,
   tipoLabels,
@@ -28,7 +30,22 @@ export default function DemandaForm({
   onDismissError,
   simplified = false,
 }) {
-  const [showAdvanced, setShowAdvanced] = useState(!simplified);
+  const [showAdvanced, setShowAdvanced] = useState(() => {
+    if (!simplified) return true;
+    try {
+      return localStorage.getItem(STORAGE_KEY_ADVANCED) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (simplified) {
+      try {
+        localStorage.setItem(STORAGE_KEY_ADVANCED, showAdvanced ? 'true' : 'false');
+      } catch {}
+    }
+  }, [simplified, showAdvanced]);
 
   const set = (field, val) => {
     if (typeof onChange === 'function') {
