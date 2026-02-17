@@ -87,9 +87,11 @@ export default function DemandasPage() {
     user,
   });
 
-  const handleCloseQuickView = useCallback(() => {
+  const handleCloseDrawer = useCallback(() => {
     if (idFromRoute) navigate('/demandas', { replace: true });
     setQuickViewDemanda(null);
+    setShowNovaDemanda(false);
+    setErroCriar(null);
   }, [idFromRoute, navigate]);
 
   useEffect(() => {
@@ -470,10 +472,6 @@ export default function DemandasPage() {
         )}
       </Modal>
 
-      <Modal open={showNovaDemanda} onClose={() => { setShowNovaDemanda(false); setErroCriar(null); }} title="Nova Demanda">
-        <DemandaForm value={novaDemanda} onChange={setNovaDemanda} onSubmit={handleCriarDemanda} onCancel={() => { setShowNovaDemanda(false); setErroCriar(null); }} submitting={criandoDemanda} submitLabel="Criar" pessoasLista={pessoasLista} empreendimentosLista={empreendimentosLista} error={erroCriar} onDismissError={() => setErroCriar(null)} simplified />
-      </Modal>
-
       <Modal open={!!demandaEmEdicao} onClose={() => { setDemandaEmEdicao(null); setErroEditar(null); }} title="Editar Demanda">
         <DemandaForm value={editDemandaForm} onChange={setEditDemandaForm} onSubmit={handleSalvarEditarDemanda} onCancel={() => { setDemandaEmEdicao(null); setErroEditar(null); }} submitting={salvandoDemanda} submitLabel="Salvar" pessoasLista={pessoasLista} empreendimentosLista={empreendimentosLista} error={erroEditar} onDismissError={() => setErroEditar(null)} />
       </Modal>
@@ -481,20 +479,36 @@ export default function DemandasPage() {
       <ConfirmDialog open={!!concluirDemanda} onClose={() => setConcluirDemanda(null)} onConfirm={handleConfirmarConcluir} title="Concluir demanda" message="Marcar esta demanda como concluída?" confirmLabel="Concluir" cancelLabel="Cancelar" variant="danger" />
 
       <Drawer
-        open={!!quickViewDemanda}
-        onClose={handleCloseQuickView}
-        title={quickViewDemanda ? `${formatDemandaId(quickViewDemanda.id)} ${quickViewDemanda.titulo}` : ''}
+        open={!!quickViewDemanda || showNovaDemanda}
+        onClose={handleCloseDrawer}
+        title={quickViewDemanda ? `${formatDemandaId(quickViewDemanda.id)} ${quickViewDemanda.titulo}` : showNovaDemanda ? 'Nova Demanda' : ''}
         width="max-w-[50vw]"
       >
-        {quickViewDemanda && (
+        {quickViewDemanda ? (
           <DemandaQuickView
             demanda={quickViewDemanda}
-            onClose={handleCloseQuickView}
+            onClose={handleCloseDrawer}
             onEditar={handleAbrirEditarDemanda}
             podeEditar={isCoordenador || (isDesigner && Number(quickViewDemanda.responsavelId) === Number(user?.pessoaId))}
             onComentarioAdicionado={() => refreshDemandas({ silent: true })}
           />
-        )}
+        ) : showNovaDemanda ? (
+          <div className="p-4">
+            <DemandaForm
+              value={novaDemanda}
+              onChange={setNovaDemanda}
+              onSubmit={handleCriarDemanda}
+              onCancel={handleCloseDrawer}
+              submitting={criandoDemanda}
+              submitLabel="Criar"
+              pessoasLista={pessoasLista}
+              empreendimentosLista={empreendimentosLista}
+              error={erroCriar}
+              onDismissError={() => setErroCriar(null)}
+              simplified
+            />
+          </div>
+        ) : null}
       </Drawer>
 
       {/* Modal Priorizar (arrastar de Aguardando → A Fazer) */}
