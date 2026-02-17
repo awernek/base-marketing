@@ -58,11 +58,11 @@ export default function DemandaForm({
   };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit?.(e); }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit?.(e); }} className="space-y-3">
       {error && (
         <div
           id="demanda-form-error"
-          className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200"
+          className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200"
           role="alert"
         >
           <span className="text-red-600 shrink-0" aria-hidden="true">⚠️</span>
@@ -102,7 +102,7 @@ export default function DemandaForm({
           id="demanda-descricao"
           value={value.descricao ?? ''}
           onChange={(e) => set('descricao', e.target.value)}
-          className={`${inputClass} min-h-[80px]`}
+          className={`${inputClass} min-h-[72px] resize-y`}
           placeholder="Contexto, referências, instruções..."
         />
       </div>
@@ -111,113 +111,113 @@ export default function DemandaForm({
         <button
           type="button"
           onClick={() => setShowAdvanced(a => !a)}
-          className="text-sm font-medium text-primary-blue hover:text-primary-blue-dark"
+          className="text-sm font-medium text-primary-blue hover:text-primary-blue-dark py-0.5"
         >
           {showAdvanced ? '− Ocultar campos opcionais' : '+ Campos opcionais (tipo, responsável, prazo…)'}
         </button>
       )}
 
       {(showAdvanced || !simplified) && (
-        <>
-      <div>
-        <label className={labelClass} htmlFor="demanda-prioridade">Prioridade</label>
-        <select
-          id="demanda-prioridade"
-          value={value.prioridade ?? PrioridadeDemanda.MEDIA}
-          onChange={(e) => set('prioridade', Number(e.target.value))}
-          className={inputClass}
-        >
-          {Object.entries(prioridadeLabels).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="demanda-tipo">Tipo</label>
-        <select
-          id="demanda-tipo"
-          value={value.tipo ?? TipoDemanda.NOVA_PECA}
-          onChange={(e) => set('tipo', Number(e.target.value))}
-          className={inputClass}
-        >
-          {Object.entries(tipoLabels).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="demanda-responsavel">Responsável (opcional)</label>
-        <select
-          id="demanda-responsavel"
-          value={value.responsavelId ?? ''}
-          onChange={(e) => set('responsavelId', e.target.value)}
-          className={inputClass}
-        >
-          <option value="">— Nenhum / Definir depois —</option>
-          {pessoasLista.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nome} — carga {p.cargaAtual || '—'}, {p.demandasAtivas ?? 0} demanda(s)
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="demanda-link">Link (opcional)</label>
-        <input
-          id="demanda-link"
-          type="url"
-          value={value.link ?? ''}
-          onChange={(e) => set('link', e.target.value)}
-          className={inputClass}
-          placeholder="https://..."
-        />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="demanda-empreendimento">Empreendimento (opcional)</label>
-        <select
-          id="demanda-empreendimento"
-          value={value.empreendimentoId ?? ''}
-          onChange={(e) => set('empreendimentoId', e.target.value)}
-          className={inputClass}
-        >
-          <option value="">Nenhum</option>
-          {empreendimentosLista.map((emp) => (
-            <option key={emp.id} value={emp.id}>{emp.nome}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="demanda-prazo">Prazo (opcional)</label>
-        <input
-          id="demanda-prazo"
-          type="date"
-          value={value.prazo ?? ''}
-          onChange={(e) => set('prazo', e.target.value)}
-          className={inputClass}
-        />
-      </div>
-      <div>
-        <span className={labelClass}>Impacto</span>
-        <div className="flex flex-wrap gap-4 pt-1">
-          {[ImpactoNegocio.VENDA, ImpactoNegocio.LEAD, ImpactoNegocio.INSTITUCIONAL].map((i) => (
-            <label key={i} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="impacto"
-                value={i}
-                checked={(value.impacto ?? ImpactoNegocio.LEAD) === i}
-                onChange={() => set('impacto', i)}
-                className="border-gray-300 text-primary-blue focus:ring-primary-blue"
-              />
-              <span className="text-sm text-gray-700">{impactoLabels[i]}</span>
-            </label>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 pt-1">
+          <div>
+            <label className={labelClass} htmlFor="demanda-prioridade">Prioridade</label>
+            <select
+              id="demanda-prioridade"
+              value={value.prioridade ?? PrioridadeDemanda.MEDIA}
+              onChange={(e) => set('prioridade', Number(e.target.value))}
+              className={inputClass}
+            >
+              {Object.entries(prioridadeLabels).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="demanda-tipo">Tipo</label>
+            <select
+              id="demanda-tipo"
+              value={value.tipo ?? TipoDemanda.NOVA_PECA}
+              onChange={(e) => set('tipo', Number(e.target.value))}
+              className={inputClass}
+            >
+              {Object.entries(tipoLabels).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="demanda-responsavel">Responsável (opcional)</label>
+            <select
+              id="demanda-responsavel"
+              value={value.responsavelId ?? ''}
+              onChange={(e) => set('responsavelId', e.target.value)}
+              className={inputClass}
+            >
+              <option value="">— Nenhum / Definir depois —</option>
+              {pessoasLista.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome} — carga {p.cargaAtual || '—'}, {p.demandasAtivas ?? 0} demanda(s)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="demanda-link">Link (opcional)</label>
+            <input
+              id="demanda-link"
+              type="url"
+              value={value.link ?? ''}
+              onChange={(e) => set('link', e.target.value)}
+              className={inputClass}
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="demanda-prazo">Prazo (opcional)</label>
+            <input
+              id="demanda-prazo"
+              type="date"
+              value={value.prazo ?? ''}
+              onChange={(e) => set('prazo', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="demanda-empreendimento">Empreendimento (opcional)</label>
+            <select
+              id="demanda-empreendimento"
+              value={value.empreendimentoId ?? ''}
+              onChange={(e) => set('empreendimentoId', e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Nenhum</option>
+              {empreendimentosLista.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.nome}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <span className={labelClass}>Impacto</span>
+            <div className="flex flex-wrap gap-4 gap-y-1 pt-0.5">
+              {[ImpactoNegocio.VENDA, ImpactoNegocio.LEAD, ImpactoNegocio.INSTITUCIONAL].map((i) => (
+                <label key={i} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="impacto"
+                    value={i}
+                    checked={(value.impacto ?? ImpactoNegocio.LEAD) === i}
+                    onChange={() => set('impacto', i)}
+                    className="border-gray-300 text-primary-blue focus:ring-primary-blue"
+                  />
+                  <span className="text-sm text-gray-700">{impactoLabels[i]}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-        </>
       )}
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex gap-3 pt-3">
         <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
           Cancelar
         </Button>
